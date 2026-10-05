@@ -2,10 +2,31 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QFileInfo>
+#include <QUrl>
+#include <QTimer>
 
 #include "pdfdocument.h"
 #include "pdfimageprovider.h"
 #include "filehelper.h"
+
+static QString findPdfArgument(const QStringList &args)
+{
+    for (int i = 1; i < args.size(); ++i) {
+        const QString &a = args.at(i);
+        if (a.startsWith(QLatin1Char('-')))
+            continue;
+
+        QString path = a;
+        if (path.startsWith(QLatin1String("file:")))
+            path = QUrl(path).toLocalFile();
+
+        QFileInfo fi(path);
+        if (fi.exists() && fi.isFile())
+            return fi.absoluteFilePath();
+    }
+    return {};
+}
 
 int main(int argc, char *argv[])
 {
@@ -13,6 +34,7 @@ int main(int argc, char *argv[])
     app.setApplicationName("Readected");
     app.setOrganizationName("Proletariat");
     app.setApplicationVersion("1.1.0");
+    app.setDesktopFileName(QStringLiteral("readected"));
 
     QQuickStyle::setStyle("Fusion");
 
@@ -36,6 +58,13 @@ int main(int argc, char *argv[])
 
     if (engine.rootObjects().isEmpty())
         return -1;
+
+    const QString pdfPath = findPdfArgument(app.arguments());
+    if (!pdfPath.isEmpty()) {
+        QTimer::singleShot(0, &pdfDoc, [&pdfDoc, pdfPath]() {
+            pdfDoc.setSource(pdfPath);
+        });
+    }
 
     return app.exec();
 }
