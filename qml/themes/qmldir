@@ -1,0 +1,6 @@
+singleton ThemeManager 1.0 ThemeManager.qml
+Marxism 1.0 Marxism.qml
+GruvboxDark 1.0 GruvboxDark.qml
+GruvboxLight 1.0 GruvboxLight.qml
+CatppuccinMocha 1.0 CatppuccinMocha.qml
+CatppuccinLatte 1.0 CatppuccinLatte.qml
