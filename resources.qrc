@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/Main.qml</file>
+        <file>qml/components/AppToolbar.qml</file>
+        <file>qml/components/SidePanel.qml</file>
+        <file>qml/components/PageArea.qml</file>
+        <file>qml/components/SearchBar.qml</file>
+        <file>qml/components/AboutDialog.qml</file>
+        <file>qml/components/qmldir</file>
+        <file>qml/themes/ThemeManager.qml</file>
+        <file>qml/themes/Marxism.qml</file>
+        <file>qml/themes/GruvboxDark.qml</file>
+        <file>qml/themes/GruvboxLight.qml</file>
+        <file>qml/themes/CatppuccinMocha.qml</file>
+        <file>qml/themes/CatppuccinLatte.qml</file>
+        <file>qml/themes/qmldir</file>
+    </qresource>
+</RCC>
