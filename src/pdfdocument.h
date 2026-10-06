@@ -2,52 +2,60 @@
 #define PDFDOCUMENT_H
 
 #include <QObject>
+#include <QString>
 #include <QImage>
 #include <QVariantList>
-#include <QString>
 #include <memory>
 
 namespace Poppler {
 class Document;
+class Page;
 }
 
 class PdfDocument : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString source READ source WRITE setSource NOTIFY sourceChanged)
     Q_PROPERTY(int pageCount READ pageCount NOTIFY pageCountChanged)
-    Q_PROPERTY(QString path READ path NOTIFY pathChanged)
-    Q_PROPERTY(bool loaded READ isLoaded NOTIFY loadedChanged)
-    Q_PROPERTY(QVariantList outline READ outline NOTIFY outlineChanged)
+    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
+    Q_PROPERTY(QVariantList bookmarks READ bookmarks NOTIFY bookmarksChanged)
+    Q_PROPERTY(QString title READ title NOTIFY titleChanged)
 
 public:
     explicit PdfDocument(QObject *parent = nullptr);
     ~PdfDocument() override;
 
-    Q_INVOKABLE bool load(const QString &path);
-    Q_INVOKABLE void close();
-    Q_INVOKABLE QImage renderPage(int page, double scale) const;
-    Q_INVOKABLE QVariantList search(const QString &text, int page) const;
+    QString source() const { return m_source; }
+    void setSource(const QString &path);
 
     int pageCount() const { return m_pageCount; }
-    QString path() const { return m_path; }
-    bool isLoaded() const { return m_document != nullptr; }
-    QVariantList outline() const { return m_outline; }
+    bool ready() const { return m_ready; }
+    QVariantList bookmarks() const { return m_bookmarks; }
+    QString title() const { return m_title; }
+
+    Q_INVOKABLE QImage renderPage(int pageIndex, qreal scale) const;
+    Q_INVOKABLE QSizeF pageSize(int pageIndex) const;
+    Q_INVOKABLE QVariantList search(const QString &text) const;
 
 signals:
+    void sourceChanged();
     void pageCountChanged();
-    void pathChanged();
-    void loadedChanged();
-    void outlineChanged();
-    void documentLoaded();
+    void readyChanged();
+    void bookmarksChanged();
+    void titleChanged();
     void errorOccurred(const QString &message);
 
 private:
-    void rebuildOutline();
+    void loadDocument(const QString &path);
+    void clear();
+    void loadBookmarks();
 
-    std::unique_ptr<Poppler::Document> m_document;
-    QString m_path;
+    QString m_source;
     int m_pageCount = 0;
-    QVariantList m_outline;
+    bool m_ready = false;
+    QString m_title;
+    QVariantList m_bookmarks;
+    std::unique_ptr<Poppler::Document> m_doc;
 };
 
 #endif // PDFDOCUMENT_H

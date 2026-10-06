@@ -23,6 +23,7 @@ void PdfImageProvider::clearCache()
 
 QImage PdfImageProvider::requestImage(const QString &id, QSize *size, const QSize &requestedSize)
 {
+    // id: "pageIndex_scale" e.g. "3_1.20"
     const QStringList parts = id.split(QLatin1Char('_'));
     if (parts.size() < 2)
         return {};
@@ -48,16 +49,19 @@ QImage PdfImageProvider::requestImage(const QString &id, QSize *size, const QSiz
     if (!m_doc || !m_doc->ready())
         return {};
 
+    // Cap scale to avoid huge bitmaps
     const qreal cappedScale = qMin(scale, 2.5);
     QImage img = m_doc->renderPage(page, cappedScale);
     if (img.isNull())
         return {};
 
-    if (img.width() * img.height() > 8000000)
+    // Convert to more compact format if very large
+    if (img.width() * img.height() > 8'000'000)
         img = img.scaled(img.width() / 2, img.height() / 2, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
     {
         QMutexLocker lock(&m_mutex);
+        // LRU-ish: keep at most 12 pages
         if (m_cache.size() >= 12)
             m_cache.clear();
         m_cache.insert(cacheKey, img);

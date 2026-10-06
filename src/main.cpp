@@ -2,75 +2,80 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
-#include <QCommandLineParser>
 #include <QFileInfo>
+#include <QUrl>
+#include <QTimer>
 #include <QPalette>
-#include <QDir>
-#include <QIcon>
 
 #include "pdfdocument.h"
 #include "pdfimageprovider.h"
 #include "filehelper.h"
 
+static QString findPdfArgument(const QStringList &args)
+{
+    for (int i = 1; i < args.size(); ++i) {
+        const QString &a = args.at(i);
+        if (a.startsWith(QLatin1Char('-')))
+            continue;
+        QString path = a;
+        if (path.startsWith(QLatin1String("file:")))
+            path = QUrl(path).toLocalFile();
+        QFileInfo fi(path);
+        if (fi.exists() && fi.isFile())
+            return fi.absoluteFilePath();
+    }
+    return {};
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    app.setApplicationName("Readected");
-    app.setApplicationVersion("1.3.0");
-    app.setOrganizationName("SnowyFedora");
-    app.setDesktopFileName("readected");
+    app.setApplicationName(QStringLiteral("Readected"));
+    app.setOrganizationName(QStringLiteral("Proletariat"));
+    app.setApplicationVersion(QStringLiteral("1.3.0"));
+    app.setDesktopFileName(QStringLiteral("readected"));
 
-    // Material style; respect qt6ct / system theme when available
-    QQuickStyle::setStyle("Material");
+    // Material Design (qt6ct still works with System theme for colors)
+    if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
+        QQuickStyle::setStyle(QStringLiteral("Material"));
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription("Readected — Material Design PDF Reader");
-    parser.addHelpOption();
-    parser.addVersionOption();
-    parser.addPositionalArgument("file", "PDF file to open", "[file]");
-    parser.process(app);
+    qmlRegisterType<PdfDocument>("Readected", 1, 0, "PdfDocument");
 
-    QString initialFile;
-    const QStringList args = parser.positionalArguments();
-    if (!args.isEmpty()) {
-        QFileInfo fi(args.first());
-        if (fi.exists() && fi.isFile())
-            initialFile = fi.absoluteFilePath();
-    }
-
-    PdfDocument pdfDocument;
+    PdfDocument pdfDoc;
+    PdfImageProvider *provider = new PdfImageProvider(&pdfDoc);
     FileHelper fileHelper;
 
     QQmlApplicationEngine engine;
+    engine.addImageProvider(QStringLiteral("pdf"), provider);
+    engine.rootContext()->setContextProperty(QStringLiteral("pdfDocument"), &pdfDoc);
+    engine.rootContext()->setContextProperty(QStringLiteral("fileHelper"), &fileHelper);
+    engine.rootContext()->setContextProperty(QStringLiteral("appVersion"), app.applicationVersion());
 
-    // Export system palette for QML "System" theme
-    QPalette pal = app.palette();
-    QVariantMap systemPalette;
-    systemPalette["window"] = pal.color(QPalette::Window);
-    systemPalette["windowText"] = pal.color(QPalette::WindowText);
-    systemPalette["base"] = pal.color(QPalette::Base);
-    systemPalette["text"] = pal.color(QPalette::Text);
-    systemPalette["button"] = pal.color(QPalette::Button);
-    systemPalette["buttonText"] = pal.color(QPalette::ButtonText);
-    systemPalette["highlight"] = pal.color(QPalette::Highlight);
-    systemPalette["highlightedText"] = pal.color(QPalette::HighlightedText);
-    systemPalette["mid"] = pal.color(QPalette::Mid);
-    systemPalette["dark"] = pal.color(QPalette::Dark);
-    systemPalette["light"] = pal.color(QPalette::Light);
-    systemPalette["link"] = pal.color(QPalette::Link);
+    const QPalette pal = app.palette();
+    auto hex = [](const QColor &c) { return c.name(QColor::HexRgb); };
+    engine.rootContext()->setContextProperty(QStringLiteral("sysWindow"), hex(pal.color(QPalette::Window)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysBase"), hex(pal.color(QPalette::Base)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysButton"), hex(pal.color(QPalette::Button)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysText"), hex(pal.color(QPalette::WindowText)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysHighlight"), hex(pal.color(QPalette::Highlight)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysHighlightedText"), hex(pal.color(QPalette::HighlightedText)));
+    engine.rootContext()->setContextProperty(QStringLiteral("sysMid"), hex(pal.color(QPalette::Mid)));
 
-    engine.rootContext()->setContextProperty("pdfDocument", &pdfDocument);
-    engine.rootContext()->setContextProperty("fileHelper", &fileHelper);
-    engine.rootContext()->setContextProperty("systemPalette", systemPalette);
-    engine.rootContext()->setContextProperty("initialFile", initialFile);
+    QObject::connect(&pdfDoc, &PdfDocument::sourceChanged, provider, [provider, &pdfDoc]() {
+        provider->setDocument(&pdfDoc);
+        provider->clearCache();
+    });
 
-    engine.addImageProvider("pdf", new PdfImageProvider(&pdfDocument));
+    engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
+    if (engine.rootObjects().isEmpty())
+        return -1;
 
-    const QUrl url(QStringLiteral("qrc:/qml/Main.qml"));
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-                     &app, []() { QCoreApplication::exit(-1); },
-                     Qt::QueuedConnection);
-    engine.load(url);
+    const QString pdfPath = findPdfArgument(app.arguments());
+    if (!pdfPath.isEmpty()) {
+        QTimer::singleShot(0, &pdfDoc, [&pdfDoc, pdfPath]() {
+            pdfDoc.setSource(pdfPath);
+        });
+    }
 
     return app.exec();
 }

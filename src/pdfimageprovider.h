@@ -24,4 +24,4 @@ private:
     QMutex m_mutex;
 };
 
-#endif
+#endif // PDFIMAGEPROVIDER_H
