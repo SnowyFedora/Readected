@@ -9,9 +9,9 @@ Item {
     width: visible ? panelWidth : 0
     clip: true
 
-    property real panelWidth: 280
+    property real panelWidth: 260
     property real minWidth: 180
-    property real maxWidth: 520
+    property real maxWidth: 480
     property string title: "Outline"
     property string emptyText: "No outline"
     property var bookmarks: []
@@ -30,25 +30,34 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        width: Math.max(0, parent.width - 4)
+        anchors.right: handle.left
         color: ThemeManager.surface
 
         ColumnLayout {
             anchors.fill: parent
             spacing: 0
 
-            Label {
+            Item {
                 Layout.fillWidth: true
-                Layout.leftMargin: 16
-                Layout.rightMargin: 8
-                Layout.topMargin: 14
-                Layout.bottomMargin: 10
-                text: root.title
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                font.capitalization: Font.AllUppercase
-                color: ThemeManager.textDim
-                elide: Text.ElideRight
+                Layout.preferredHeight: 40
+                Label {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.title
+                    color: ThemeManager.textDim
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    font.capitalization: Font.AllUppercase
+                    letterSpacing: 0.8
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: ThemeManager.border
+                opacity: 0.5
             }
 
             ListView {
@@ -57,31 +66,23 @@ Item {
                 Layout.fillHeight: true
                 clip: true
                 model: root.bookmarks
-                boundsBehavior: Flickable.StopAtBounds
+                spacing: 1
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AsNeeded
-                    width: 8
+                    contentItem: Rectangle { implicitWidth: 3; radius: 1.5; color: ThemeManager.border }
                 }
 
                 delegate: ItemDelegate {
                     id: del
                     width: list.width
-                    height: Math.max(40, contentLabel.implicitHeight + 16)
-                    leftPadding: 12 + Math.max(0, (modelData.level - 1) * 12)
+                    height: 34
+                    leftPadding: 12 + (modelData.level ? (modelData.level - 1) * 12 : 0)
                     rightPadding: 12
-                    hoverEnabled: true
 
-                    ToolTip.visible: hovered && contentLabel.truncated
-                    ToolTip.text: modelData.title || ""
-                    ToolTip.delay: 500
-
-                    contentItem: Label {
-                        id: contentLabel
+                    contentItem: Text {
                         text: modelData.title || ""
                         color: ThemeManager.text
-                        font.pixelSize: 13
-                        wrapMode: Text.WordWrap
-                        maximumLineCount: 3
+                        font.pixelSize: 12
                         elide: Text.ElideRight
                         verticalAlignment: Text.AlignVCenter
                         width: del.width - del.leftPadding - del.rightPadding
@@ -89,11 +90,15 @@ Item {
 
                     background: Rectangle {
                         color: del.hovered ? ThemeManager.surface2 : "transparent"
-                        radius: 4
+                        radius: 6
                         anchors.fill: parent
-                        anchors.leftMargin: 4
-                        anchors.rightMargin: 4
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
                     }
+
+                    ToolTip.visible: del.hovered && contentItem.truncatedContentWidth > contentItem.width
+                    ToolTip.delay: 600
+                    ToolTip.text: modelData.title || ""
 
                     onClicked: {
                         if (modelData.page >= 0)
@@ -109,7 +114,7 @@ Item {
                 text: root.emptyText
                 color: ThemeManager.textDim
                 horizontalAlignment: Text.AlignHCenter
-                font.pixelSize: 13
+                font.pixelSize: 12
                 wrapMode: Text.WordWrap
             }
         }
@@ -120,13 +125,11 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: 4
-        color: handleMa.containsMouse || handleMa.pressed
-               ? ThemeManager.primary : ThemeManager.border
-        opacity: handleMa.containsMouse || handleMa.pressed ? 1 : 0.5
+        width: 3
+        color: handleMa.containsMouse || handleMa.pressed ? ThemeManager.primary : "transparent"
+        opacity: handleMa.containsMouse || handleMa.pressed ? 0.7 : 0
         visible: root.visible
-
-        Behavior on color { ColorAnimation { duration: 100 } }
+        Behavior on opacity { NumberAnimation { duration: 100 } }
 
         MouseArea {
             id: handleMa
@@ -135,10 +138,8 @@ Item {
             cursorShape: Qt.SizeHorCursor
             hoverEnabled: true
             preventStealing: true
-
             property real startX: 0
             property real startW: 0
-
             onPressed: (mouse) => {
                 root.resizing = true
                 startX = mapToItem(root.parent, mouse.x, 0).x
@@ -147,8 +148,7 @@ Item {
             onPositionChanged: (mouse) => {
                 if (!pressed) return
                 const x = mapToItem(root.parent, mouse.x, 0).x
-                const delta = x - startX
-                const w = Math.min(root.maxWidth, Math.max(root.minWidth, startW + delta))
+                const w = Math.min(root.maxWidth, Math.max(root.minWidth, startW + (x - startX)))
                 root.panelWidth = w
             }
             onReleased: {

@@ -13,14 +13,14 @@ Rectangle {
     property bool documentReady: false
     property bool continuous: true
     property bool invert: false
-    property string emptyHint: "Open a PDF"
+    property string emptyHint: "Open a document"
     property string emptyHint2: ""
 
     property real pageWpt: 595
     property real pageHpt: 842
     readonly property real pagePixelW: pageWpt * zoomFactor
     readonly property real pagePixelH: pageHpt * zoomFactor
-    readonly property real pageGap: continuous ? 16 : 0
+    readonly property real pageGap: continuous ? 20 : 0
     readonly property real pageStride: pagePixelH + pageGap
 
     signal pageChanged(int page)
@@ -35,22 +35,22 @@ Rectangle {
         cacheBuffer: Math.round(root.pagePixelH * 1.5)
         reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
-
-        ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        ScrollBar.vertical: ScrollBar {
+            policy: ScrollBar.AsNeeded
+            contentItem: Rectangle { implicitWidth: 4; radius: 2; color: ThemeManager.border }
+        }
 
         delegate: Item {
             width: listView.width
             height: root.pagePixelH
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(root.pagePixelW, parent.width - 48)
+                width: Math.min(root.pagePixelW, parent.width - 56)
                 height: root.pagePixelH
                 color: "#ffffff"
-                radius: 4
-                layer.enabled: true
+                radius: 2
                 border.color: ThemeManager.border
                 border.width: 1
-
                 Image {
                     id: img
                     anchors.fill: parent
@@ -68,13 +68,13 @@ Rectangle {
                     visible: root.invert
                     color: "#c4a574"
                     opacity: 0.28
-                    radius: 4
+                    radius: 2
                 }
                 BusyIndicator {
                     anchors.centerIn: parent
                     running: img.status === Image.Loading
                     visible: running
-                    width: 32; height: 32
+                    width: 28; height: 28
                 }
             }
         }
@@ -83,8 +83,7 @@ Rectangle {
         onMovementEnded: syncPage()
         function syncPage() {
             if (root.pageStride <= 0) return
-            const idx = Math.max(0, Math.min(root.pageCount - 1,
-                Math.round(contentY / root.pageStride)))
+            const idx = Math.max(0, Math.min(root.pageCount - 1, Math.round(contentY / root.pageStride)))
             if (idx !== root.currentPage) {
                 root.currentPage = idx
                 root.pageChanged(idx)
@@ -97,16 +96,15 @@ Rectangle {
         visible: root.documentReady && !root.continuous
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(root.pagePixelW, parent.width - 48)
-            height: Math.min(root.pagePixelH, parent.height - 32)
+            width: Math.min(root.pagePixelW, parent.width - 56)
+            height: Math.min(root.pagePixelH, parent.height - 40)
             color: "#ffffff"
-            radius: 4
+            radius: 2
             border.color: ThemeManager.border
             Image {
                 anchors.fill: parent
                 anchors.margins: 1
-                source: root.documentReady
-                        ? ("image://pdf/" + root.currentPage + "_" + root.zoomFactor.toFixed(2)) : ""
+                source: root.documentReady ? ("image://pdf/" + root.currentPage + "_" + root.zoomFactor.toFixed(2)) : ""
                 asynchronous: true
                 cache: false
                 smooth: true
@@ -117,27 +115,43 @@ Rectangle {
                 visible: root.invert
                 color: "#c4a574"
                 opacity: 0.28
-                radius: 4
+                radius: 2
             }
         }
     }
 
     Column {
         anchors.centerIn: parent
-        spacing: 8
+        spacing: 16
         visible: !root.documentReady
-        Label {
-            text: root.emptyHint
-            color: ThemeManager.text
-            font.pixelSize: 18
-            font.weight: Font.Medium
+        width: Math.min(360, parent.width - 48)
+        Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
+            width: 64; height: 64
+            radius: 16
+            color: ThemeManager.surface2
+            Text {
+                anchors.centerIn: parent
+                text: "\u25a2"
+                font.pixelSize: 28
+                color: ThemeManager.textDim
+            }
         }
         Label {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: root.emptyHint
+            color: ThemeManager.text
+            font.pixelSize: 16
+            font.weight: Font.Medium
+        }
+        Label {
+            anchors.horizontalCenter: parent.horizontalCenter
+            width: parent.width
             text: root.emptyHint2
             color: ThemeManager.textDim
-            font.pixelSize: 13
-            anchors.horizontalCenter: parent.horizontalCenter
+            font.pixelSize: 12
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
         }
     }
 
