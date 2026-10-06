@@ -9,13 +9,13 @@ import "themes"
 ApplicationWindow {
     id: root
     visible: true
-    width: 1320
-    height: 860
-    minimumWidth: 960
-    minimumHeight: 640
-    title: pdfDocument.ready ? (pdfDocument.title + " — Readected") : "Readected"
+    width: 1280
+    height: 820
+    minimumWidth: 900
+    minimumHeight: 560
+    title: pdfDocument.ready ? (pdfDocument.title || "PDF") + " — Readected" : "Readected"
     color: ThemeManager.bg
-    font.family: "Inter, Noto Sans, sans-serif"
+    font.family: "Inter, JetBrains Mono, Noto Sans, sans-serif"
     font.pixelSize: 13
 
     Material.theme: ThemeManager.isDark ? Material.Dark : Material.Light
@@ -23,44 +23,32 @@ ApplicationWindow {
     Material.primary: ThemeManager.primary
     Material.background: ThemeManager.bg
     Material.foreground: ThemeManager.text
-    Material.roundedScale: Material.Medium
+    Material.roundedScale: Material.Small
 
-    property string lang: "en"
+    property string lang: "ru"
     property bool continuousMode: true
     property bool invertPages: false
     property var recentFiles: []
-    property bool sidebarOpen: false
+    property bool sidebarOpen: true
 
     readonly property var i18n: ({
         en: {
-            open: "Open", close: "Close", quit: "Quit",
-            prev: "Previous", next: "Next",
-            zoomIn: "Zoom in", zoomOut: "Zoom out",
-            fitWidth: "Fit width", fitPage: "Fit page",
-            search: "Search", theme: "Theme", about: "About",
-            file: "File", view: "View", help: "Help",
-            contents: "Outline", noBookmarks: "No outline",
-            openHint: "Open a document",
-            openHint2: "Ctrl+O  ·  drag & drop  ·  or use the button below",
-            continuous: "Continuous", single: "Single page",
-            invert: "Night mode", recent: "Recent", clearRecent: "Clear recent",
-            goTo: "Go to page", fullscreen: "Fullscreen",
-            language: "Language", page: "Page", of: "of"
+            open: "Open", close: "Close", outline: "Outline",
+            noOutline: "No outline", search: "Search",
+            emptyTitle: "No document open",
+            emptySub: "Open a PDF, drop a file here, or pass a path on the CLI",
+            openBtn: "Open PDF", page: "Page", of: "of",
+            continuous: "Scroll", single: "Single", night: "Night",
+            theme: "Theme", about: "About"
         },
         ru: {
-            open: "Открыть", close: "Закрыть", quit: "Выход",
-            prev: "Назад", next: "Далее",
-            zoomIn: "Крупнее", zoomOut: "Мельче",
-            fitWidth: "По ширине", fitPage: "По странице",
-            search: "Поиск", theme: "Тема", about: "О программе",
-            file: "Файл", view: "Вид", help: "Справка",
-            contents: "Оглавление", noBookmarks: "Нет оглавления",
-            openHint: "Откройте документ",
-            openHint2: "Ctrl+O  ·  перетащите файл  ·  или кнопка ниже",
-            continuous: "Лента", single: "Постранично",
-            invert: "Ночной режим", recent: "Недавние", clearRecent: "Очистить",
-            goTo: "Перейти", fullscreen: "Полный экран",
-            language: "Язык", page: "Стр.", of: "из"
+            open: "Открыть", close: "Закрыть", outline: "Оглавление",
+            noOutline: "Нет оглавления", search: "Поиск",
+            emptyTitle: "Документ не открыт",
+            emptySub: "Откройте PDF, перетащите файл сюда или укажите путь в CLI",
+            openBtn: "Открыть PDF", page: "Стр.", of: "из",
+            continuous: "Лента", single: "Страница", night: "Ночь",
+            theme: "Тема", about: "О программе"
         }
     })
     function tr(k) { return (i18n[lang] && i18n[lang][k]) ? i18n[lang][k] : k }
@@ -68,11 +56,11 @@ ApplicationWindow {
     Settings {
         id: settings
         property string theme: "graphite"
-        property string language: "en"
-        property real zoom: 1.15
+        property string language: "ru"
+        property real zoom: 1.2
         property bool continuous: true
-        property bool sidebar: false
-        property real sidebarWidth: 260
+        property bool sidebar: true
+        property real sidebarWidth: 240
         property bool invert: false
         property string recentJson: "[]"
     }
@@ -123,169 +111,217 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.Find]; onActivated: searchBar.toggle() }
     Shortcut { sequence: "Ctrl+="; onActivated: pageArea.zoomIn() }
     Shortcut { sequence: "Ctrl+-"; onActivated: pageArea.zoomOut() }
-    Shortcut { sequence: "Ctrl+0"; onActivated: pageArea.fitWidth() }
-    Shortcut { sequence: "Ctrl+1"; onActivated: pageArea.fitPage() }
+    Shortcut { sequence: "Ctrl+0"; onActivated: pageArea.fitToWidth() }
+    Shortcut { sequence: "Ctrl+1"; onActivated: pageArea.fitToPage() }
     Shortcut { sequence: "Ctrl+B"; onActivated: sidebarOpen = !sidebarOpen }
     Shortcut { sequence: "Ctrl+L"; onActivated: continuousMode = !continuousMode }
     Shortcut { sequence: "Ctrl+I"; onActivated: invertPages = !invertPages }
-    Shortcut { sequence: "F11"; onActivated: root.visibility = root.visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
     Shortcut { sequence: "Left"; onActivated: if (pdfDocument.ready) pageArea.goTo(pageArea.currentPage - 1) }
     Shortcut { sequence: "Right"; onActivated: if (pdfDocument.ready) pageArea.goTo(pageArea.currentPage + 1) }
     Shortcut { sequence: "Space"; onActivated: if (pdfDocument.ready) pageArea.goTo(pageArea.currentPage + 1) }
 
     header: Rectangle {
-        height: 48
+        height: 36
         color: ThemeManager.surface
         Rectangle {
-            anchors.bottom: parent.bottom; width: parent.width; height: 1
-            color: ThemeManager.border; opacity: 0.6
+            anchors.bottom: parent.bottom
+            width: parent.width
+            height: 1
+            color: ThemeManager.border
         }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10; anchors.rightMargin: 10
-            spacing: 2
-
-            ToolButton {
-                id: btnSidebar
-                implicitWidth: 36; implicitHeight: 36
-                text: "☰"
-                font.pixelSize: 15
-                onClicked: sidebarOpen = !sidebarOpen
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("contents") + "  (Ctrl+B)"
-                background: Rectangle { radius: 8; color: btnSidebar.hovered || sidebarOpen ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: btnSidebar.text; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font: btnSidebar.font }
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            spacing: 0
+            Item {
+                Layout.preferredWidth: 32; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: sbMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "="; color: ThemeManager.text; font.pixelSize: 14; font.bold: true }
+                    MouseArea {
+                        id: sbMa; anchors.fill: parent; hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: sidebarOpen = !sidebarOpen
+                    }
+                }
             }
-            ToolButton {
-                id: btnOpen
-                implicitWidth: 36; implicitHeight: 36
-                onClicked: openNative()
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("open") + "  (Ctrl+O)"
-                background: Rectangle { radius: 8; color: btnOpen.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: "▢"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 14 }
+            Item {
+                Layout.preferredWidth: 56; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: opMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "Open"; color: ThemeManager.text; font.pixelSize: 12 }
+                    MouseArea {
+                        id: opMa; anchors.fill: parent; hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: openNative()
+                    }
+                }
             }
-            ToolButton {
-                id: btnClose
-                implicitWidth: 36; implicitHeight: 36
-                enabled: pdfDocument.ready
-                onClicked: closeDoc()
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("close")
-                background: Rectangle { radius: 8; color: btnClose.hovered && btnClose.enabled ? ThemeManager.surface2 : "transparent"; opacity: btnClose.enabled ? 1 : 0.35 }
-                contentItem: Text { text: "×"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 18 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: clMa.containsMouse && pdfDocument.ready ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "x"; color: pdfDocument.ready ? ThemeManager.text : ThemeManager.textDim; font.pixelSize: 13 }
+                    MouseArea {
+                        id: clMa; anchors.fill: parent; hoverEnabled: true
+                        enabled: pdfDocument.ready
+                        onClicked: closeDoc()
+                    }
+                }
             }
-
-            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
-
-            ToolButton {
-                id: btnPrev
-                implicitWidth: 36; implicitHeight: 36
-                enabled: pdfDocument.ready && pageArea.currentPage > 0
-                onClicked: pageArea.goTo(pageArea.currentPage - 1)
-                background: Rectangle { radius: 8; color: btnPrev.hovered && btnPrev.enabled ? ThemeManager.surface2 : "transparent"; opacity: btnPrev.enabled ? 1 : 0.3 }
-                contentItem: Text { text: "‹"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 20 }
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: ThemeManager.border; Layout.leftMargin: 6; Layout.rightMargin: 6 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: prevMa.containsMouse && pdfDocument.ready ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "<"; color: pdfDocument.ready ? ThemeManager.text : ThemeManager.textDim; font.pixelSize: 14 }
+                    MouseArea {
+                        id: prevMa; anchors.fill: parent; hoverEnabled: true
+                        enabled: pdfDocument.ready && pageArea.currentPage > 0
+                        onClicked: pageArea.goTo(pageArea.currentPage - 1)
+                    }
+                }
             }
-            ToolButton {
-                id: btnNext
-                implicitWidth: 36; implicitHeight: 36
-                enabled: pdfDocument.ready && pageArea.currentPage < pdfDocument.pageCount - 1
-                onClicked: pageArea.goTo(pageArea.currentPage + 1)
-                background: Rectangle { radius: 8; color: btnNext.hovered && btnNext.enabled ? ThemeManager.surface2 : "transparent"; opacity: btnNext.enabled ? 1 : 0.3 }
-                contentItem: Text { text: "›"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 20 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: nextMa.containsMouse && pdfDocument.ready ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: ">"; color: pdfDocument.ready ? ThemeManager.text : ThemeManager.textDim; font.pixelSize: 14 }
+                    MouseArea {
+                        id: nextMa; anchors.fill: parent; hoverEnabled: true
+                        enabled: pdfDocument.ready && pageArea.currentPage < pdfDocument.pageCount - 1
+                        onClicked: pageArea.goTo(pageArea.currentPage + 1)
+                    }
+                }
             }
-
-            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
-
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                enabled: pdfDocument.ready
-                onClicked: pageArea.zoomOut()
-                background: Rectangle { radius: 8; color: parent.hovered && parent.enabled ? ThemeManager.surface2 : "transparent"; opacity: parent.enabled ? 1 : 0.3 }
-                contentItem: Text { text: "−"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 18 }
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: ThemeManager.border; Layout.leftMargin: 6; Layout.rightMargin: 6 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: zoMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "-"; color: ThemeManager.text; font.pixelSize: 15 }
+                    MouseArea { id: zoMa; anchors.fill: parent; hoverEnabled: true; onClicked: pageArea.zoomOut() }
+                }
             }
-            Label {
-                text: pdfDocument.ready ? Math.round(pageArea.zoomFactor * 100) + "%" : "—"
+            Text {
+                text: pdfDocument.ready ? Math.round(pageArea.zoomFactor * 100) + "%" : "--"
                 color: ThemeManager.textDim
-                font.pixelSize: 12
-                Layout.preferredWidth: 44
+                font.pixelSize: 11
+                font.family: "monospace"
+                Layout.preferredWidth: 40
                 horizontalAlignment: Text.AlignHCenter
             }
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                enabled: pdfDocument.ready
-                onClicked: pageArea.zoomIn()
-                background: Rectangle { radius: 8; color: parent.hovered && parent.enabled ? ThemeManager.surface2 : "transparent"; opacity: parent.enabled ? 1 : 0.3 }
-                contentItem: Text { text: "+"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 16 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: ziMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "+"; color: ThemeManager.text; font.pixelSize: 14 }
+                    MouseArea { id: ziMa; anchors.fill: parent; hoverEnabled: true; onClicked: pageArea.zoomIn() }
+                }
             }
-
-            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
-
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                checkable: true; checked: continuousMode
-                onClicked: continuousMode = !continuousMode
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: continuousMode ? tr("continuous") : tr("single")
-                background: Rectangle { radius: 8; color: parent.checked || parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: continuousMode ? "≡" : "▭"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 14 }
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: ThemeManager.border; Layout.leftMargin: 6; Layout.rightMargin: 6 }
+            Item {
+                Layout.preferredWidth: 56; Layout.preferredHeight: 24
+                Rectangle {
+                    anchors.fill: parent; radius: 4
+                    color: continuousMode ? ThemeManager.surface2 : "transparent"
+                    border.color: continuousMode ? ThemeManager.border : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: continuousMode ? tr("continuous") : tr("single")
+                        color: continuousMode ? ThemeManager.primary : ThemeManager.textDim
+                        font.pixelSize: 11
+                    }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: continuousMode = !continuousMode }
+                }
             }
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                onClicked: searchBar.toggle()
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("search") + "  (Ctrl+F)"
-                background: Rectangle { radius: 8; color: parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: "⌕"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 15 }
+            Item {
+                Layout.preferredWidth: 44; Layout.preferredHeight: 24
+                Layout.leftMargin: 4
+                Rectangle {
+                    anchors.fill: parent; radius: 4
+                    color: invertPages ? ThemeManager.surface2 : "transparent"
+                    border.color: invertPages ? ThemeManager.border : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: tr("night")
+                        color: invertPages ? ThemeManager.accent : ThemeManager.textDim
+                        font.pixelSize: 11
+                    }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: invertPages = !invertPages }
+                }
             }
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                checkable: true; checked: invertPages
-                onClicked: invertPages = !invertPages
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("invert")
-                background: Rectangle { radius: 8; color: parent.checked || parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: "◐"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 14 }
+            Item {
+                Layout.preferredWidth: 28; Layout.preferredHeight: 28
+                Layout.leftMargin: 2
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: 2; radius: 4
+                    color: seMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: "S"; color: ThemeManager.text; font.pixelSize: 12; font.bold: true }
+                    MouseArea { id: seMa; anchors.fill: parent; hoverEnabled: true; onClicked: searchBar.toggle() }
+                }
             }
-
             Item { Layout.fillWidth: true }
-
-            Label {
+            Text {
                 visible: pdfDocument.ready
                 text: tr("page") + " " + (pageArea.currentPage + 1) + " " + tr("of") + " " + pdfDocument.pageCount
                 color: ThemeManager.textDim
-                font.pixelSize: 12
+                font.pixelSize: 11
+                font.family: "monospace"
+                Layout.rightMargin: 8
             }
-
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                onClicked: themeMenu.open()
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("theme")
-                background: Rectangle { radius: 8; color: parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: "◉"; color: ThemeManager.primary; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 13 }
-                Menu {
-                    id: themeMenu
-                    width: 200
-                    Repeater {
-                        model: ThemeManager.themeIds
-                        MenuItem {
-                            text: ThemeManager.nameOf(modelData)
-                            checkable: true
-                            checked: ThemeManager.current === modelData
-                            onTriggered: ThemeManager.setTheme(modelData)
+            Item {
+                Layout.preferredWidth: 48; Layout.preferredHeight: 24
+                Rectangle {
+                    anchors.fill: parent; radius: 4
+                    color: thMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text { anchors.centerIn: parent; text: tr("theme"); color: ThemeManager.textDim; font.pixelSize: 11 }
+                    MouseArea {
+                        id: thMa; anchors.fill: parent; hoverEnabled: true
+                        onClicked: themeMenu.open()
+                    }
+                    Menu {
+                        id: themeMenu
+                        width: 200
+                        Repeater {
+                            model: ThemeManager.themeIds
+                            MenuItem {
+                                required property var modelData
+                                text: ThemeManager.displayName(modelData)
+                                checkable: true
+                                checked: ThemeManager.current === modelData
+                                onTriggered: {
+                                    ThemeManager.setTheme(modelData)
+                                    settings.theme = modelData
+                                }
+                            }
                         }
                     }
                 }
             }
-            ToolButton {
-                implicitWidth: 40; implicitHeight: 36
-                text: lang === "ru" ? "RU" : "EN"
-                font.pixelSize: 11
-                font.bold: true
-                onClicked: lang = (lang === "ru" ? "en" : "ru")
-                background: Rectangle { radius: 8; color: parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: parent.text; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font: parent.font }
-            }
-            ToolButton {
-                implicitWidth: 36; implicitHeight: 36
-                onClicked: aboutDialog.open()
-                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("about")
-                background: Rectangle { radius: 8; color: parent.hovered ? ThemeManager.surface2 : "transparent" }
-                contentItem: Text { text: "i"; color: ThemeManager.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; font.pixelSize: 14; font.bold: true }
+            Item {
+                Layout.preferredWidth: 32; Layout.preferredHeight: 24
+                Rectangle {
+                    anchors.fill: parent; radius: 4
+                    color: langMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    Text {
+                        anchors.centerIn: parent
+                        text: lang === "ru" ? "RU" : "EN"
+                        color: ThemeManager.textDim; font.pixelSize: 11; font.bold: true
+                    }
+                    MouseArea {
+                        id: langMa; anchors.fill: parent; hoverEnabled: true
+                        onClicked: lang = (lang === "ru" ? "en" : "ru")
+                    }
+                }
             }
         }
     }
@@ -304,62 +340,122 @@ ApplicationWindow {
     RowLayout {
         anchors.fill: parent
         spacing: 0
-
         SidePanel {
             id: sidePanel
             Layout.fillHeight: true
             visible: sidebarOpen
-            title: tr("contents")
-            emptyText: tr("noBookmarks")
+            title: tr("outline")
+            emptyText: tr("noOutline")
             bookmarks: pdfDocument.bookmarks
             onPageRequested: (p) => pageArea.goTo(p)
             onWidthEdited: (w) => { settings.sidebarWidth = w }
         }
-
         Rectangle {
-            Layout.preferredWidth: sidebarOpen ? 1 : 0
+            Layout.preferredWidth: 1
             Layout.fillHeight: true
             color: ThemeManager.border
-            opacity: 0.5
             visible: sidebarOpen
         }
-
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 0
-
             SearchBar {
                 id: searchBar
                 Layout.fillWidth: true
                 placeholder: tr("search")
-                onSearchRequested: (q) => pageArea.search(q)
             }
-
-            PageArea {
-                id: pageArea
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                continuous: continuousMode
-                invert: invertPages
-                emptyHint: tr("openHint")
-                emptyHint2: tr("openHint2")
+                PageArea {
+                    id: pageArea
+                    anchors.fill: parent
+                    continuous: continuousMode
+                    invert: invertPages
+                    documentReady: pdfDocument.ready
+                    pageCount: pdfDocument.pageCount
+                    emptyHint: ""
+                    emptyHint2: ""
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: ThemeManager.bg
+                    visible: !pdfDocument.ready
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 12
+                        width: 420
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: tr("emptyTitle")
+                            color: ThemeManager.text
+                            font.pixelSize: 22
+                            font.weight: Font.DemiBold
+                        }
+                        Text {
+                            width: parent.width
+                            horizontalAlignment: Text.AlignHCenter
+                            text: tr("emptySub")
+                            color: ThemeManager.textDim
+                            font.pixelSize: 13
+                            wrapMode: Text.WordWrap
+                        }
+                        Item { height: 8; width: 1 }
+                        Rectangle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: 140; height: 36
+                            radius: 6
+                            color: openBtnMa.containsMouse ? ThemeManager.primaryHover : ThemeManager.primary
+                            Text {
+                                anchors.centerIn: parent
+                                text: tr("openBtn")
+                                color: ThemeManager.onPrimary
+                                font.pixelSize: 13
+                                font.weight: Font.DemiBold
+                            }
+                            MouseArea {
+                                id: openBtnMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: openNative()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
-    // FAB open button when empty
-    RoundButton {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 24
-        width: 52; height: 52
-        visible: !pdfDocument.ready
-        text: "+"
-        font.pixelSize: 22
-        Material.background: ThemeManager.primary
-        Material.foreground: "#ffffff"
-        onClicked: openNative()
+    footer: Rectangle {
+        height: 22
+        color: ThemeManager.surface
+        Rectangle {
+            anchors.top: parent.top
+            width: parent.width
+            height: 1
+            color: ThemeManager.border
+        }
+        Text {
+            anchors.left: parent.left
+            anchors.leftMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: pdfDocument.ready
+                  ? ((pdfDocument.source || "").split("/").pop())
+                  : "Readected 1.3.1 · UI-FIXED"
+            color: ThemeManager.textDim
+            font.pixelSize: 10
+            font.family: "monospace"
+        }
+        Text {
+            anchors.right: parent.right
+            anchors.rightMargin: 12
+            anchors.verticalCenter: parent.verticalCenter
+            text: ThemeManager.displayName(ThemeManager.current)
+            color: ThemeManager.textDim
+            font.pixelSize: 10
+        }
     }
 
     AboutDialog { id: aboutDialog }
