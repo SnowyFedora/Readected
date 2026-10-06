@@ -51,6 +51,9 @@ private:
     void setBusy(bool b);
     void setProgress(int p);
     void runInstallScript();
+    QString installedShaPath() const;
+    QString readInstalledSha() const;
+    void writeInstalledSha(const QString &sha);
 
     QNetworkAccessManager m_nam;
     QProcess *m_proc = nullptr;
