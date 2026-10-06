@@ -17,10 +17,9 @@ UpdaterBackend::UpdaterBackend(QObject *parent)
     : QObject(parent)
 {
     m_status = tr("Ready");
-    // Default source: ~/Загрузки/readected or ~/Downloads/readected
     const QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
     const QStringList candidates = {
-        home + QStringLiteral("/Загрузки/readected"),
+        home + QStringLiteral("/\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0438/readected"),
         home + QStringLiteral("/Downloads/readected"),
         home + QStringLiteral("/readected"),
         QCoreApplication::applicationDirPath() + QStringLiteral("/../share/readected")
@@ -32,13 +31,12 @@ UpdaterBackend::UpdaterBackend(QObject *parent)
         }
     }
     if (m_sourceDir.isEmpty())
-        m_sourceDir = home + QStringLiteral("/Загрузки/readected");
+        m_sourceDir = home + QStringLiteral("/Downloads/readected");
 }
 
 void UpdaterBackend::setSourceDir(const QString &dir)
 {
-    if (m_sourceDir == dir)
-        return;
+    if (m_sourceDir == dir) return;
     m_sourceDir = dir;
     emit sourceDirChanged();
 }
@@ -52,8 +50,7 @@ void UpdaterBackend::setStatus(const QString &s)
 
 void UpdaterBackend::appendLog(const QString &line)
 {
-    if (!m_log.isEmpty())
-        m_log += QLatin1Char('\n');
+    if (!m_log.isEmpty()) m_log += QLatin1Char('\n');
     m_log += line;
     emit logChanged();
 }
@@ -73,13 +70,45 @@ void UpdaterBackend::setProgress(int p)
     emit progressChanged();
 }
 
+QString UpdaterBackend::installedShaPath() const
+{
+    const QString cfg = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+    QDir().mkpath(cfg);
+    return cfg + QStringLiteral("/installed_sha");
+}
+
+QString UpdaterBackend::readInstalledSha() const
+{
+    QFile f(installedShaPath());
+    if (f.open(QIODevice::ReadOnly))
+        return QString::fromUtf8(f.readAll()).trimmed().left(7);
+    return {};
+}
+
+void UpdaterBackend::writeInstalledSha(const QString &sha)
+{
+    if (sha.isEmpty()) return;
+    QFile f(installedShaPath());
+    if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        f.write(sha.toUtf8());
+        f.write("\n");
+    }
+    if (!m_sourceDir.isEmpty()) {
+        QFile f2(m_sourceDir + QStringLiteral("/.readected_sha"));
+        if (f2.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+            f2.write(sha.toUtf8());
+            f2.write("\n");
+        }
+    }
+}
+
 void UpdaterBackend::checkForUpdates()
 {
     if (m_busy) return;
     setBusy(true);
     setProgress(10);
-    setStatus(tr("Checking GitHub…"));
-    appendLog(tr("→ GET api.github.com/repos/SnowyFedora/Readected/commits/main"));
+    setStatus(tr("Checking GitHub\u2026"));
+    appendLog(tr("\u2192 GET api.github.com/repos/SnowyFedora/Readected/commits/main"));
 
     QNetworkRequest req(QUrl(QStringLiteral(
         "https://api.github.com/repos/SnowyFedora/Readected/commits/main")));
@@ -106,30 +135,38 @@ void UpdaterBackend::checkForUpdates()
         m_remoteVersion = m_remoteSha.isEmpty() ? QStringLiteral("unknown") : m_remoteSha;
         emit remoteVersionChanged();
 
-        // Compare with local VERSION file or always offer update if remote exists
-        QString localSha;
-        QFile ver(m_sourceDir + QStringLiteral("/.git/refs/heads/main"));
-        if (ver.open(QIODevice::ReadOnly))
-            localSha = QString::fromUtf8(ver.readAll()).trimmed().left(7);
+        QString localSha = readInstalledSha();
+        if (localSha.isEmpty()) {
+            QFile ver(m_sourceDir + QStringLiteral("/.git/refs/heads/main"));
+            if (ver.open(QIODevice::ReadOnly))
+                localSha = QString::fromUtf8(ver.readAll()).trimmed().left(7);
+        }
+        if (localSha.isEmpty()) {
+            QFile ver2(m_sourceDir + QStringLiteral("/.readected_sha"));
+            if (ver2.open(QIODevice::ReadOnly))
+                localSha = QString::fromUtf8(ver2.readAll()).trimmed().left(7);
+        }
 
-        m_updateAvailable = !m_remoteSha.isEmpty() && (localSha.isEmpty() || localSha != m_remoteSha);
-        // Also true if no git — user can still reinstall from zip
-        if (localSha.isEmpty() && !m_remoteSha.isEmpty())
-            m_updateAvailable = true;
+        if (localSha.isEmpty() && !m_remoteSha.isEmpty()) {
+            writeInstalledSha(m_remoteSha);
+            localSha = m_remoteSha;
+            m_updateAvailable = false;
+        } else {
+            m_updateAvailable = !m_remoteSha.isEmpty() && !localSha.isEmpty() && localSha != m_remoteSha;
+        }
 
         emit updateAvailableChanged();
         setProgress(100);
 
         if (m_updateAvailable) {
             setStatus(tr("Update available"));
-            appendLog(tr("Remote: %1 — %2").arg(m_remoteSha, msg));
+            appendLog(tr("Remote: %1 \u2014 %2").arg(m_remoteSha, msg));
             if (!localSha.isEmpty())
                 appendLog(tr("Local:  %1").arg(localSha));
-            else
-                appendLog(tr("Local git SHA not found — reinstall recommended"));
         } else {
             setStatus(tr("Up to date"));
             appendLog(tr("Already on latest commit (%1)").arg(m_remoteSha));
+            writeInstalledSha(m_remoteSha);
         }
         setBusy(false);
         emit finished(true);
@@ -143,8 +180,8 @@ void UpdaterBackend::installUpdate()
     setProgress(5);
     m_log.clear();
     emit logChanged();
-    setStatus(tr("Downloading…"));
-    appendLog(tr("→ Download source archive from GitHub"));
+    setStatus(tr("Downloading\u2026"));
+    appendLog(tr("\u2192 Download source archive from GitHub"));
 
     m_downloadPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
                      + QStringLiteral("/readected-update.zip");
@@ -178,10 +215,8 @@ void UpdaterBackend::installUpdate()
         f.close();
         appendLog(tr("Saved %1").arg(m_downloadPath));
         setProgress(60);
-        setStatus(tr("Extracting & installing…"));
+        setStatus(tr("Extracting & installing\u2026"));
 
-        // unzip + install via shell
-        const QString home = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
         const QString destParent = QFileInfo(m_sourceDir).absolutePath();
         const QString script = QStringLiteral(
             "set -e\n"
@@ -211,7 +246,8 @@ void UpdaterBackend::installUpdate()
             setProgress(100);
             if (code == 0) {
                 setStatus(tr("Installed successfully"));
-                appendLog(tr("✓ Done. Restart Readected."));
+                appendLog(tr("\u2713 Done. Restart Readected."));
+                writeInstalledSha(m_remoteSha);
                 m_updateAvailable = false;
                 emit updateAvailableChanged();
                 emit finished(true);
@@ -223,9 +259,14 @@ void UpdaterBackend::installUpdate()
             setBusy(false);
         });
 
-        appendLog(tr("→ Running install.sh (may ask sudo password in terminal)"));
-        // Run in terminal-friendly way; GUI sudo may need pkexec
-        m_proc->start(QStringLiteral("bash"), QStringList() << QStringLiteral("-lc") << script);
+        appendLog(tr("\u2192 Running install.sh (password dialog via pkexec/sudo)\u2026"));
+        if (QFileInfo::exists(QStringLiteral("/usr/bin/pkexec"))) {
+            m_proc->start(QStringLiteral("pkexec"),
+                          QStringList() << QStringLiteral("bash") << QStringLiteral("-lc") << script);
+        } else {
+            m_proc->start(QStringLiteral("bash"),
+                          QStringList() << QStringLiteral("-lc") << script);
+        }
         setProgress(70);
     });
 }
