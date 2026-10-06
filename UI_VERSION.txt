@@ -1,1 +1,3 @@
-UI-FIXED + themes live 2026-10-06
+UI-FIXED + themes live + sidebar resize independent of window
+2026-10-06
+commit dbe7109 SidePanel Layout.preferredWidth 140-720px
