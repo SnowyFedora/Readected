@@ -2,8 +2,8 @@
 #define FILEHELPER_H
 
 #include <QObject>
-#include <QUrl>
-#include <QFileInfo>
+#include <QFileDialog>
+#include <QStandardPaths>
 
 class FileHelper : public QObject
 {
@@ -11,22 +11,15 @@ class FileHelper : public QObject
 public:
     explicit FileHelper(QObject *parent = nullptr) : QObject(parent) {}
 
-    Q_INVOKABLE QString toLocalFile(const QUrl &url) const
+    Q_INVOKABLE QString openPdf()
     {
-        if (url.isLocalFile())
-            return url.toLocalFile();
-        return url.toString();
-    }
-
-    Q_INVOKABLE bool exists(const QString &path) const
-    {
-        return QFileInfo::exists(path);
-    }
-
-    Q_INVOKABLE QString fileName(const QString &path) const
-    {
-        return QFileInfo(path).fileName();
+        return QFileDialog::getOpenFileName(
+            nullptr,
+            tr("Open PDF"),
+            QStandardPaths::writableLocation(QStandardPaths::HomeLocation),
+            tr("PDF files (*.pdf);;All files (*)")
+        );
     }
 };
 
-#endif // FILEHELPER_H
+#endif

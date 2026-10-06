@@ -2,82 +2,171 @@
 # Readected — build & install script
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${ROOT}/build"
-PREFIX="${PREFIX:-/usr/local}"
+PREFIX="${PREFIX:-/usr}"
+BUILD_TYPE="${BUILD_TYPE:-Release}"
+JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${SCRIPT_DIR}/build"
 
-echo "==> Readected installer"
-echo "    Prefix: ${PREFIX}"
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-need() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        echo "ERROR: missing dependency: $1"
-        exit 1
+info()  { echo -e "${CYAN}==>${NC} $*"; }
+ok()    { echo -e "${GREEN}==>${NC} $*"; }
+die()   { echo -e "${RED}error:${NC} $*" >&2; exit 1; }
+
+run_priv() {
+    # Prefer pkexec in GUI (no TTY); sudo in terminal
+    if [[ ! -t 0 ]] && command -v pkexec >/dev/null 2>&1; then
+        pkexec "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        die "Need sudo or pkexec to install to ${PREFIX}"
     fi
 }
 
-echo "==> Checking tools..."
-need cmake
-need ninja
-need pkg-config
+need_cmd() {
+    command -v "$1" >/dev/null 2>&1 || die "'$1' not found. Install build dependencies first."
+}
 
-if ! pkg-config --exists poppler-qt6; then
-    echo "ERROR: poppler-qt6 not found (pkg-config)"
-    echo "  Arch:    sudo pacman -S poppler-qt6"
-    echo "  Debian:  sudo apt install libpoppler-qt6-dev"
-    exit 1
-fi
+check_deps() {
+    info "Checking dependencies..."
+    need_cmd cmake
+    need_cmd ninja
+    need_cmd pkg-config
+    need_cmd c++
 
-if ! pkg-config --exists Qt6Core Qt6Qml Qt6Quick Qt6QuickControls2 Qt6Widgets Qt6Network 2>/dev/null; then
-    echo "WARNING: some Qt6 modules may be missing — build will report exact ones"
-fi
+    if ! pkg-config --exists poppler-qt6; then
+        die "poppler-qt6 not found (pkg-config). On Arch: sudo pacman -S poppler-qt6"
+    fi
 
-echo "==> Configuring..."
-mkdir -p "${BUILD_DIR}"
-cd "${BUILD_DIR}"
-cmake -G Ninja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-    "${ROOT}"
+    ok "Tools OK"
+}
 
-echo "==> Building..."
-ninja
+configure() {
+    info "Configuring (prefix=${PREFIX}, type=${BUILD_TYPE})..."
+    mkdir -p "${BUILD_DIR}"
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+        -DCMAKE_INSTALL_PREFIX="${PREFIX}"
+    ok "Configured"
+}
 
-echo "==> Installing..."
-if [[ -w "${PREFIX}" ]] || [[ -w "${PREFIX}/bin" ]]; then
-    ninja install
-else
-    echo "    (needs sudo for ${PREFIX})"
-    sudo ninja install
-fi
+build() {
+    info "Building (${JOBS} jobs)..."
+    cmake --build "${BUILD_DIR}" -j "${JOBS}"
+    ok "Build complete"
+}
 
-# Desktop entries
-APPDIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
-mkdir -p "${APPDIR}"
+install_app() {
+    info "Installing to ${PREFIX}..."
+    if [[ "${PREFIX}" == /usr* ]] || [[ "${PREFIX}" == /opt* ]]; then
+        run_priv cmake --install "${BUILD_DIR}"
+    else
+        cmake --install "${BUILD_DIR}"
+    fi
 
-cat > "${APPDIR}/readected.desktop" << EOF
+    local apps_dir
+    if [[ "${PREFIX}" == /usr ]]; then
+        apps_dir="/usr/share/applications"
+    else
+        apps_dir="${PREFIX}/share/applications"
+        mkdir -p "${apps_dir}"
+    fi
+
+    local desktop_file="${apps_dir}/readected.desktop"
+    local write_cmd=(tee "${desktop_file}")
+    if [[ ! -w "${apps_dir}" ]]; then
+        write_cmd=(run_priv tee "${desktop_file}")
+    fi
+
+    cat << DESKTOP | "${write_cmd[@]}" >/dev/null
 [Desktop Entry]
 Name=Readected
-Comment=Material Design PDF Reader
-Exec=${PREFIX}/bin/readected %f
+GenericName=PDF Reader
+GenericName[ru]=PDF-читалка
+Comment=PDF Reader for the Proletariat
+Comment[ru]=PDF-читалка для пролетариата
+Exec=readected %f
 Icon=application-pdf
 Terminal=false
 Type=Application
 Categories=Office;Viewer;
 MimeType=application/pdf;
-EOF
+Keywords=PDF;reader;viewer;document;
+StartupNotify=true
+DESKTOP
 
-cat > "${APPDIR}/readected-updater.desktop" << EOF
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        if [[ -w "${apps_dir}" ]]; then
+            update-desktop-database "${apps_dir}" 2>/dev/null || true
+        else
+            run_priv update-desktop-database "${apps_dir}" 2>/dev/null || true
+        fi
+    fi
+
+    ok "Installed: ${PREFIX}/bin/readected"
+    ok "Desktop entry: ${desktop_file}"
+
+    local updater_desktop="${apps_dir}/readected-updater.desktop"
+    local uw=(tee "${updater_desktop}")
+    if [[ ! -w "${apps_dir}" ]]; then
+        uw=(run_priv tee "${updater_desktop}")
+    fi
+    cat << UDESK | "${uw[@]}" >/dev/null
 [Desktop Entry]
 Name=Readected Updater
-Comment=Update Readected from GitHub
-Exec=${PREFIX}/bin/readected-updater
+Name[ru]=Обновление Readected
+Comment=Update Readected PDF reader
+Comment[ru]=Обновление PDF-читалки Readected
+Exec=readected-updater
 Icon=system-software-update
 Terminal=false
 Type=Application
-Categories=System;
-EOF
+Categories=Utility;System;
+StartupNotify=true
+UDESK
+    ok "Updater desktop: ${updater_desktop}"
+}
 
-echo ""
-echo "✓ Done. Launch with:  readected  [file.pdf]"
-echo "  Updater:             readected-updater"
+main() {
+    echo ""
+    echo "  Readected — PDF Reader for the Proletariat"
+    echo "  ----------------------------------------"
+    echo ""
+
+    case "${1:-all}" in
+        deps)      check_deps ;;
+        configure) check_deps; configure ;;
+        build)     check_deps; configure; build ;;
+        install)   install_app ;;
+        all)
+            check_deps
+            configure
+            build
+            install_app
+            echo ""
+            ok "Done. Run: readected"
+            echo ""
+            ;;
+        uninstall)
+            info "Removing Readected..."
+            run_priv rm -f /usr/bin/readected /usr/bin/readected-updater
+            run_priv rm -f /usr/share/applications/readected.desktop
+            run_priv rm -f /usr/share/applications/readected-updater.desktop
+            run_priv update-desktop-database /usr/share/applications 2>/dev/null || true
+            ok "Uninstalled"
+            ;;
+        *)
+            echo "Usage: $0 [all|deps|configure|build|install|uninstall]"
+            echo "  PREFIX=/usr/local $0    # custom prefix"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
