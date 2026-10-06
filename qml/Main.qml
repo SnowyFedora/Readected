@@ -9,13 +9,13 @@ import "themes"
 ApplicationWindow {
     id: root
     visible: true
-    width: 1280
-    height: 840
-    minimumWidth: 900
-    minimumHeight: 600
+    width: 1320
+    height: 860
+    minimumWidth: 960
+    minimumHeight: 640
     title: pdfDocument.ready ? (pdfDocument.title + " \u2014 Readected") : "Readected"
     color: ThemeManager.bg
-    font.pixelSize: 14
+    font.pixelSize: 13
 
     Material.theme: ThemeManager.isDark ? Material.Dark : Material.Light
     Material.accent: ThemeManager.primary
@@ -27,33 +27,38 @@ ApplicationWindow {
     property bool continuousMode: true
     property bool invertPages: false
     property var recentFiles: []
+    property bool sidebarOpen: false
 
     readonly property var i18n: ({
-        en: { open:"Open", close:"Close", quit:"Quit", prev:"Prev", next:"Next",
-              zoomIn:"Zoom in", zoomOut:"Zoom out", fitWidth:"Width", fitPage:"Page",
-              search:"Search", theme:"Theme", about:"About", file:"File", view:"View",
-              contents:"Outline", noBookmarks:"No outline", openHint:"Open a PDF",
-              openHint2:"or drag and drop here", continuous:"Continuous", single:"Single",
-              invert:"Night mode", recent:"Recent", clearRecent:"Clear", goTo:"Go to page",
-              fullscreen:"Fullscreen", language:"Language", update:"Updater" },
-        ru: { open:"\u041e\u0442\u043a\u0440\u044b\u0442\u044c", close:"\u0417\u0430\u043a\u0440\u044b\u0442\u044c", quit:"\u0412\u044b\u0445\u043e\u0434", prev:"\u041d\u0430\u0437\u0430\u0434", next:"\u0414\u0430\u043b\u0435\u0435",
-              zoomIn:"\u041a\u0440\u0443\u043f\u043d\u0435\u0435", zoomOut:"\u041c\u0435\u043b\u044c\u0447\u0435", fitWidth:"\u0428\u0438\u0440\u0438\u043d\u0430", fitPage:"\u0421\u0442\u0440\u0430\u043d\u0438\u0446\u0430",
-              search:"\u041f\u043e\u0438\u0441\u043a", theme:"\u0422\u0435\u043c\u0430", about:"\u041e \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0435", file:"\u0424\u0430\u0439\u043b", view:"\u0412\u0438\u0434",
-              contents:"\u041e\u0433\u043b\u0430\u0432\u043b\u0435\u043d\u0438\u0435", noBookmarks:"\u041d\u0435\u0442 \u043e\u0433\u043b\u0430\u0432\u043b\u0435\u043d\u0438\u044f", openHint:"\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 PDF",
-              openHint2:"\u0438\u043b\u0438 \u043f\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0441\u044e\u0434\u0430", continuous:"\u041b\u0435\u043d\u0442\u0430", single:"\u041f\u043e\u0441\u0442\u0440\u0430\u043d\u0438\u0447\u043d\u043e",
-              invert:"\u041d\u043e\u0447\u043d\u043e\u0439 \u0440\u0435\u0436\u0438\u043c", recent:"\u041d\u0435\u0434\u0430\u0432\u043d\u0438\u0435", clearRecent:"\u041e\u0447\u0438\u0441\u0442\u0438\u0442\u044c", goTo:"\u041f\u0435\u0440\u0435\u0439\u0442\u0438",
-              fullscreen:"\u041f\u043e\u043b\u043d\u044b\u0439 \u044d\u043a\u0440\u0430\u043d", language:"\u042f\u0437\u044b\u043a", update:"\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435" }
+        en: {
+            open: "Open", close: "Close", quit: "Quit",
+            contents: "Outline", noBookmarks: "No outline",
+            openHint: "Open a document",
+            openHint2: "Ctrl+O  \u00b7  drag & drop  \u00b7  or use the button below",
+            continuous: "Continuous", single: "Single page",
+            invert: "Night mode", search: "Search", theme: "Theme",
+            page: "Page", of: "of"
+        },
+        ru: {
+            open: "\u041e\u0442\u043a\u0440\u044b\u0442\u044c", close: "\u0417\u0430\u043a\u0440\u044b\u0442\u044c", quit: "\u0412\u044b\u0445\u043e\u0434",
+            contents: "\u041e\u0433\u043b\u0430\u0432\u043b\u0435\u043d\u0438\u0435", noBookmarks: "\u041d\u0435\u0442 \u043e\u0433\u043b\u0430\u0432\u043b\u0435\u043d\u0438\u044f",
+            openHint: "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0434\u043e\u043a\u0443\u043c\u0435\u043d\u0442",
+            openHint2: "Ctrl+O  \u00b7  \u043f\u0435\u0440\u0435\u0442\u0430\u0449\u0438\u0442\u0435 \u0444\u0430\u0439\u043b  \u00b7  \u0438\u043b\u0438 \u043a\u043d\u043e\u043f\u043a\u0430 \u043d\u0438\u0436\u0435",
+            continuous: "\u041b\u0435\u043d\u0442\u0430", single: "\u041f\u043e\u0441\u0442\u0440\u0430\u043d\u0438\u0447\u043d\u043e",
+            invert: "\u041d\u043e\u0447\u043d\u043e\u0439 \u0440\u0435\u0436\u0438\u043c", search: "\u041f\u043e\u0438\u0441\u043a", theme: "\u0422\u0435\u043c\u0430",
+            page: "\u0421\u0442\u0440.", of: "\u0438\u0437"
+        }
     })
     function tr(k) { return (i18n[lang] && i18n[lang][k]) ? i18n[lang][k] : k }
 
     Settings {
         id: settings
-        property string theme: "system"
+        property string theme: "graphite"
         property string language: "en"
         property real zoom: 1.15
         property bool continuous: true
         property bool sidebar: false
-        property real sidebarWidth: 280
+        property real sidebarWidth: 260
         property bool invert: false
         property string recentJson: "[]"
     }
@@ -71,7 +76,7 @@ ApplicationWindow {
         continuousMode = settings.continuous
         invertPages = settings.invert
         pageArea.zoomFactor = settings.zoom
-        sidePanel.visible = settings.sidebar
+        sidebarOpen = settings.sidebar
         sidePanel.panelWidth = settings.sidebarWidth
         try { recentFiles = JSON.parse(settings.recentJson) } catch (e) { recentFiles = [] }
     }
@@ -80,7 +85,7 @@ ApplicationWindow {
         settings.language = lang
         settings.zoom = pageArea.zoomFactor
         settings.continuous = continuousMode
-        settings.sidebar = sidePanel.visible
+        settings.sidebar = sidebarOpen
         settings.sidebarWidth = sidePanel.panelWidth
         settings.invert = invertPages
         settings.recentJson = JSON.stringify(recentFiles.slice(0, 12))
@@ -104,9 +109,14 @@ ApplicationWindow {
     Shortcut { sequences: [StandardKey.Find]; onActivated: searchBar.toggle() }
     Shortcut { sequence: "Ctrl+="; onActivated: pageArea.zoomIn() }
     Shortcut { sequence: "Ctrl+-"; onActivated: pageArea.zoomOut() }
-    Shortcut { sequence: "Left"; onActivated: pageArea.goTo(Math.max(0, pageArea.currentPage - 1)) }
-    Shortcut { sequence: "Right"; onActivated: pageArea.goTo(Math.min(pdfDocument.pageCount - 1, pageArea.currentPage + 1)) }
-    Shortcut { sequence: "F11"; onActivated: visibility = visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
+    Shortcut { sequence: "Ctrl+0"; onActivated: pageArea.resetZoom() }
+    Shortcut { sequence: "Left";  onActivated: if (pdfDocument.ready) pageArea.goTo(Math.max(0, pageArea.currentPage - 1)) }
+    Shortcut { sequence: "Right"; onActivated: if (pdfDocument.ready) pageArea.goTo(Math.min(pdfDocument.pageCount - 1, pageArea.currentPage + 1)) }
+    Shortcut { sequence: "Home";  onActivated: if (pdfDocument.ready) pageArea.goTo(0) }
+    Shortcut { sequence: "End";   onActivated: if (pdfDocument.ready) pageArea.goTo(pdfDocument.pageCount - 1) }
+    Shortcut { sequence: "F11";   onActivated: visibility = visibility === Window.FullScreen ? Window.Windowed : Window.FullScreen }
+    Shortcut { sequence: "Ctrl+B"; onActivated: sidebarOpen = !sidebarOpen }
+    Shortcut { sequence: "Ctrl+I"; onActivated: invertPages = !invertPages }
 
     DropArea {
         anchors.fill: parent
@@ -118,91 +128,116 @@ ApplicationWindow {
                 if (u.toLowerCase().endsWith(".pdf")) { openPath(u); break }
             }
         }
-    }
-
-    menuBar: MenuBar {
-        Menu {
-            title: tr("file")
-            Action { text: tr("open") + "\u2026"; onTriggered: openNative() }
-            Menu {
-                title: tr("recent"); enabled: recentFiles.length > 0
-                Repeater {
-                    model: recentFiles
-                    MenuItem {
-                        required property string modelData
-                        text: modelData.split("/").pop()
-                        onTriggered: openPath(modelData)
-                    }
-                }
-                MenuSeparator {}
-                MenuItem { text: tr("clearRecent"); onTriggered: recentFiles = [] }
-            }
-            Action { text: tr("close"); onTriggered: closeDoc() }
-            MenuSeparator {}
-            Action { text: tr("quit"); onTriggered: Qt.quit() }
-        }
-        Menu {
-            title: tr("view")
-            Action { text: tr("zoomIn"); onTriggered: pageArea.zoomIn() }
-            Action { text: tr("zoomOut"); onTriggered: pageArea.zoomOut() }
-            Action { text: tr("fitWidth"); onTriggered: pageArea.fitToWidth() }
-            Action { text: tr("fitPage"); onTriggered: pageArea.fitToPage() }
-            MenuSeparator {}
-            Action { text: tr("continuous"); checkable: true; checked: continuousMode; onTriggered: continuousMode = true }
-            Action { text: tr("single"); checkable: true; checked: !continuousMode; onTriggered: continuousMode = false }
-            Action { text: tr("invert"); checkable: true; checked: invertPages; onTriggered: invertPages = !invertPages }
-            Action { text: tr("contents"); checkable: true; checked: sidePanel.visible; onTriggered: sidePanel.visible = !sidePanel.visible }
-        }
-        Menu {
-            title: tr("theme")
-            Repeater {
-                model: ThemeManager.themeIds
-                MenuItem {
-                    required property string modelData
-                    text: ThemeManager.displayName(modelData)
-                    onTriggered: { ThemeManager.setTheme(modelData); settings.theme = modelData }
-                }
-            }
-        }
-        Menu {
-            title: tr("language")
-            Action { text: "English"; onTriggered: { lang = "en"; settings.language = "en" } }
-            Action { text: "\u0420\u0443\u0441\u0441\u043a\u0438\u0439"; onTriggered: { lang = "ru"; settings.language = "ru" } }
-        }
-        Menu {
-            title: tr("about")
-            Action { text: "Readected\u2026"; onTriggered: aboutDialog.open() }
+        Rectangle {
+            anchors.fill: parent
+            color: ThemeManager.primary
+            opacity: parent.containsDrag ? 0.08 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
         }
     }
 
-    header: ToolBar {
-        Material.background: ThemeManager.surface
+    header: Rectangle {
+        height: 48
+        color: ThemeManager.surface
+        Rectangle {
+            anchors.bottom: parent.bottom
+            width: parent.width; height: 1
+            color: ThemeManager.border; opacity: 0.6
+        }
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 8; anchors.rightMargin: 8
+            anchors.leftMargin: 10; anchors.rightMargin: 10
             spacing: 2
-            ToolButton { text: "\u2630"; onClicked: sidePanel.visible = !sidePanel.visible }
-            ToolButton { text: "\uD83D\uDCC2"; onClicked: openNative() }
-            ToolButton { text: "\u2715"; enabled: pdfDocument.ready; onClicked: closeDoc() }
-            ToolSeparator {}
-            ToolButton { text: "\u25C0"; enabled: pdfDocument.ready && pageArea.currentPage > 0; onClicked: pageArea.goTo(pageArea.currentPage - 1) }
-            Label {
-                text: pdfDocument.ready ? (pageArea.currentPage + 1) + " / " + pdfDocument.pageCount : "\u2014"
-                color: ThemeManager.text; Layout.preferredWidth: 72; horizontalAlignment: Text.AlignHCenter
+
+            component BarBtn: ToolButton {
+                id: b
+                implicitWidth: 36; implicitHeight: 36
+                property string glyph: ""
+                property real glyphSize: 15
+                contentItem: Text {
+                    text: b.glyph
+                    color: ThemeManager.text
+                    opacity: b.enabled ? 1 : 0.3
+                    font.pixelSize: b.glyphSize
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    radius: 8
+                    color: b.hovered && b.enabled ? ThemeManager.surface2 : "transparent"
+                }
             }
-            ToolButton { text: "\u25B6"; enabled: pdfDocument.ready && pageArea.currentPage < pdfDocument.pageCount - 1; onClicked: pageArea.goTo(pageArea.currentPage + 1) }
-            ToolSeparator {}
-            ToolButton { text: "\u2212"; enabled: pdfDocument.ready; onClicked: pageArea.zoomOut() }
-            Label { text: Math.round(pageArea.zoomFactor * 100) + "%"; color: ThemeManager.text; Layout.preferredWidth: 48; horizontalAlignment: Text.AlignHCenter }
-            ToolButton { text: "+"; enabled: pdfDocument.ready; onClicked: pageArea.zoomIn() }
-            ToolSeparator {}
-            ToolButton { text: continuousMode ? "\uD83D\uDCDC" : "\uD83D\uDCC4"; onClicked: continuousMode = !continuousMode }
-            ToolButton { text: "\uD83D\uDD0D"; onClicked: searchBar.toggle() }
-            ToolButton { text: invertPages ? "\u2600" : "\uD83C\uDF19"; onClicked: invertPages = !invertPages }
+
+            BarBtn { glyph: "\u2630"; onClicked: sidebarOpen = !sidebarOpen; ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("contents") + "  (Ctrl+B)" }
+            BarBtn { glyph: "\u25a2"; glyphSize: 14; onClicked: openNative(); ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("open") + "  (Ctrl+O)" }
+            BarBtn { glyph: "\u00d7"; glyphSize: 18; enabled: pdfDocument.ready; onClicked: closeDoc() }
+
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
+
+            BarBtn { glyph: "\u2039"; glyphSize: 20; enabled: pdfDocument.ready && pageArea.currentPage > 0; onClicked: pageArea.goTo(pageArea.currentPage - 1) }
+            Label {
+                text: pdfDocument.ready ? (pageArea.currentPage + 1) + "  /  " + pdfDocument.pageCount : "\u2014"
+                color: ThemeManager.textDim; font.pixelSize: 12; font.family: "monospace"
+                Layout.preferredWidth: 72; horizontalAlignment: Text.AlignHCenter
+            }
+            BarBtn { glyph: "\u203a"; glyphSize: 20; enabled: pdfDocument.ready && pageArea.currentPage < pdfDocument.pageCount - 1; onClicked: pageArea.goTo(pageArea.currentPage + 1) }
+
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
+
+            BarBtn { glyph: "\u2212"; enabled: pdfDocument.ready; onClicked: pageArea.zoomOut() }
+            Label {
+                text: Math.round(pageArea.zoomFactor * 100) + "%"
+                color: ThemeManager.textDim; font.pixelSize: 12; font.family: "monospace"
+                Layout.preferredWidth: 44; horizontalAlignment: Text.AlignHCenter
+            }
+            BarBtn { glyph: "+"; enabled: pdfDocument.ready; onClicked: pageArea.zoomIn() }
+
+            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 20; color: ThemeManager.border; opacity: 0.5; Layout.leftMargin: 4; Layout.rightMargin: 4 }
+
+            BarBtn { glyph: continuousMode ? "\u2261" : "\u25ad"; onClicked: continuousMode = !continuousMode; ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: continuousMode ? tr("continuous") : tr("single") }
+            BarBtn { glyph: "\u2315"; onClicked: searchBar.toggle(); ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("search") + "  (Ctrl+F)" }
+            BarBtn { glyph: invertPages ? "\u2600" : "\u263e"; glyphSize: 13; onClicked: invertPages = !invertPages; ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("invert") }
+
             Item { Layout.fillWidth: true }
-            Label { text: ThemeManager.displayName(ThemeManager.current); color: ThemeManager.textDim; font.pixelSize: 12 }
-            ToolButton { text: lang === "ru" ? "RU" : "EN"; onClicked: { lang = lang === "ru" ? "en" : "ru"; settings.language = lang } }
-            ToolButton { text: "\u2139"; onClicked: aboutDialog.open() }
+
+            BarBtn {
+                glyph: "\u25d0"; glyphSize: 14
+                onClicked: themeMenu.open()
+                ToolTip.visible: hovered; ToolTip.delay: 500; ToolTip.text: tr("theme")
+                Menu {
+                    id: themeMenu
+                    Material.background: ThemeManager.surface
+                    Material.foreground: ThemeManager.text
+                    width: 200
+                    Repeater {
+                        model: ThemeManager.themeIds
+                        MenuItem {
+                            required property string modelData
+                            text: ThemeManager.displayName(modelData)
+                            font.pixelSize: 13
+                            onTriggered: { ThemeManager.setTheme(modelData); settings.theme = modelData }
+                            background: Rectangle {
+                                implicitHeight: 36
+                                color: parent.highlighted ? ThemeManager.surface2 : "transparent"
+                                radius: 6
+                            }
+                        }
+                    }
+                }
+            }
+            ToolButton {
+                implicitWidth: 40; implicitHeight: 36
+                onClicked: { lang = lang === "ru" ? "en" : "ru"; settings.language = lang }
+                background: Rectangle { radius: 8; color: parent.hovered ? ThemeManager.surface2 : "transparent" }
+                contentItem: Text {
+                    text: lang === "ru" ? "RU" : "EN"
+                    color: ThemeManager.textDim
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 11; font.weight: Font.DemiBold
+                }
+            }
+            BarBtn { glyph: "i"; glyphSize: 13; onClicked: aboutDialog.open() }
         }
     }
 
@@ -211,12 +246,20 @@ ApplicationWindow {
         spacing: 0
         SidePanel {
             id: sidePanel
-            visible: false
-            Layout.preferredWidth: panelWidth
+            visible: sidebarOpen
+            Layout.preferredWidth: visible ? panelWidth : 0
             Layout.fillHeight: true
-            bookmarks: pdfDocument.bookmarks
+            title: tr("contents")
             emptyText: tr("noBookmarks")
+            bookmarks: pdfDocument.bookmarks
             onPageRequested: (p) => pageArea.goTo(p)
+            onWidthEdited: (w) => { settings.sidebarWidth = w }
+        }
+        Rectangle {
+            Layout.preferredWidth: sidebarOpen ? 1 : 0
+            Layout.fillHeight: true
+            color: ThemeManager.border; opacity: 0.5
+            visible: sidebarOpen
         }
         ColumnLayout {
             Layout.fillWidth: true
@@ -247,28 +290,47 @@ ApplicationWindow {
     }
 
     RoundButton {
-        anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 24
-        width: 56; height: 56; text: "+"; font.pixelSize: 24
-        Material.background: ThemeManager.primary
-        Material.foreground: ThemeManager.onPrimary
+        id: fab
+        anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 28
+        width: 52; height: 52
         visible: !pdfDocument.ready
         onClicked: openNative()
+        background: Rectangle {
+            radius: width / 2
+            color: fab.hovered ? ThemeManager.primaryHover : ThemeManager.primary
+            Behavior on color { ColorAnimation { duration: 120 } }
+        }
+        contentItem: Text {
+            text: "+"
+            color: ThemeManager.onPrimary
+            font.pixelSize: 22; font.weight: Font.Light
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
     }
 
-    footer: ToolBar {
-        height: 28
-        Material.background: ThemeManager.surface
-        Label {
-            anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left; anchors.leftMargin: 12
-            text: pdfDocument.ready
-                  ? ("Page " + (pageArea.currentPage + 1) + " of " + pdfDocument.pageCount)
-                  : tr("openHint")
-            color: ThemeManager.textDim; font.pixelSize: 12
+    footer: Rectangle {
+        height: 26
+        color: ThemeManager.surface
+        Rectangle {
+            anchors.top: parent.top; width: parent.width; height: 1
+            color: ThemeManager.border; opacity: 0.5
         }
-        Label {
-            anchors.verticalCenter: parent.verticalCenter; anchors.right: parent.right; anchors.rightMargin: 12
-            text: "v" + appVersion
-            color: ThemeManager.textDim; font.pixelSize: 12
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14; anchors.rightMargin: 14
+            Label {
+                text: pdfDocument.ready
+                      ? (tr("page") + " " + (pageArea.currentPage + 1) + " " + tr("of") + " " + pdfDocument.pageCount
+                         + (pdfDocument.title ? "  \u00b7  " + pdfDocument.title : ""))
+                      : "Readected"
+                color: ThemeManager.textDim; font.pixelSize: 11
+                elide: Text.ElideMiddle; Layout.fillWidth: true
+            }
+            Label {
+                text: ThemeManager.displayName(ThemeManager.current) + "  \u00b7  v" + appVersion
+                color: ThemeManager.textDim; font.pixelSize: 11
+            }
         }
     }
 
