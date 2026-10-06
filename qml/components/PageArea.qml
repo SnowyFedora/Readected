@@ -160,6 +160,7 @@ Rectangle {
         }
     }
 
+    function goTo(page) { goToPage(page) }
     function goToPage(page) {
         if (!documentReady || page < 0 || page >= pageCount) return
         currentPage = page
