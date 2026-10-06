@@ -2,159 +2,82 @@
 # Readected — build & install script
 set -euo pipefail
 
-PREFIX="${PREFIX:-/usr}"
-BUILD_TYPE="${BUILD_TYPE:-Release}"
-JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUILD_DIR="${SCRIPT_DIR}/build"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_DIR="${ROOT}/build"
+PREFIX="${PREFIX:-/usr/local}"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+echo "==> Readected installer"
+echo "    Prefix: ${PREFIX}"
 
-info()  { echo -e "${CYAN}==>${NC} $*"; }
-ok()    { echo -e "${GREEN}==>${NC} $*"; }
-die()   { echo -e "${RED}error:${NC} $*" >&2; exit 1; }
-
-need_cmd() {
-    command -v "$1" >/dev/null 2>&1 || die "'$1' not found. Install build dependencies first."
+need() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo "ERROR: missing dependency: $1"
+        exit 1
+    fi
 }
 
-check_deps() {
-    info "Checking dependencies..."
-    need_cmd cmake
-    need_cmd ninja
-    need_cmd pkg-config
-    need_cmd c++
+echo "==> Checking tools..."
+need cmake
+need ninja
+need pkg-config
 
-    if ! pkg-config --exists poppler-qt6; then
-        die "poppler-qt6 not found (pkg-config). On Arch: sudo pacman -S poppler-qt6"
-    fi
-    ok "Tools OK"
-}
+if ! pkg-config --exists poppler-qt6; then
+    echo "ERROR: poppler-qt6 not found (pkg-config)"
+    echo "  Arch:    sudo pacman -S poppler-qt6"
+    echo "  Debian:  sudo apt install libpoppler-qt6-dev"
+    exit 1
+fi
 
-configure() {
-    info "Configuring (prefix=${PREFIX}, type=${BUILD_TYPE})..."
-    mkdir -p "${BUILD_DIR}"
-    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}" \
-        -G Ninja \
-        -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-        -DCMAKE_INSTALL_PREFIX="${PREFIX}"
-    ok "Configured"
-}
+if ! pkg-config --exists Qt6Core Qt6Qml Qt6Quick Qt6QuickControls2 Qt6Widgets Qt6Network 2>/dev/null; then
+    echo "WARNING: some Qt6 modules may be missing — build will report exact ones"
+fi
 
-build() {
-    info "Building (${JOBS} jobs)..."
-    cmake --build "${BUILD_DIR}" -j "${JOBS}"
-    ok "Build complete"
-}
+echo "==> Configuring..."
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
+cmake -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+    "${ROOT}"
 
-install_app() {
-    info "Installing to ${PREFIX}..."
-    if [[ "${PREFIX}" == /usr* ]] || [[ "${PREFIX}" == /opt* ]]; then
-        sudo cmake --install "${BUILD_DIR}"
-    else
-        cmake --install "${BUILD_DIR}"
-    fi
+echo "==> Building..."
+ninja
 
-    local apps_dir
-    if [[ "${PREFIX}" == /usr ]]; then
-        apps_dir="/usr/share/applications"
-    else
-        apps_dir="${PREFIX}/share/applications"
-        mkdir -p "${apps_dir}"
-    fi
+echo "==> Installing..."
+if [[ -w "${PREFIX}" ]] || [[ -w "${PREFIX}/bin" ]]; then
+    ninja install
+else
+    echo "    (needs sudo for ${PREFIX})"
+    sudo ninja install
+fi
 
-    local desktop_file="${apps_dir}/readected.desktop"
-    local write_cmd=(tee "${desktop_file}")
-    if [[ ! -w "${apps_dir}" ]]; then
-        write_cmd=(sudo tee "${desktop_file}")
-    fi
+# Desktop entries
+APPDIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+mkdir -p "${APPDIR}"
 
-    cat << DESKTOP | "${write_cmd[@]}" >/dev/null
+cat > "${APPDIR}/readected.desktop" << EOF
 [Desktop Entry]
 Name=Readected
-GenericName=PDF Reader
-GenericName[ru]=PDF-читалка
-Comment=PDF Reader for the Proletariat
-Comment[ru]=PDF-читалка для пролетариата
-Exec=readected %f
+Comment=Material Design PDF Reader
+Exec=${PREFIX}/bin/readected %f
 Icon=application-pdf
 Terminal=false
 Type=Application
 Categories=Office;Viewer;
 MimeType=application/pdf;
-Keywords=PDF;reader;viewer;document;
-StartupNotify=true
-DESKTOP
+EOF
 
-    if command -v update-desktop-database >/dev/null 2>&1; then
-        if [[ -w "${apps_dir}" ]]; then
-            update-desktop-database "${apps_dir}" 2>/dev/null || true
-        else
-            sudo update-desktop-database "${apps_dir}" 2>/dev/null || true
-        fi
-    fi
-
-    ok "Installed: ${PREFIX}/bin/readected"
-    ok "Desktop entry: ${desktop_file}"
-
-    local updater_desktop="${apps_dir}/readected-updater.desktop"
-    local uw=(tee "${updater_desktop}")
-    if [[ ! -w "${apps_dir}" ]]; then
-        uw=(sudo tee "${updater_desktop}")
-    fi
-    cat << UDESK | "${uw[@]}" >/dev/null
+cat > "${APPDIR}/readected-updater.desktop" << EOF
 [Desktop Entry]
 Name=Readected Updater
-Name[ru]=Обновление Readected
-Comment=Update Readected PDF reader
-Comment[ru]=Обновление PDF-читалки Readected
-Exec=readected-updater
+Comment=Update Readected from GitHub
+Exec=${PREFIX}/bin/readected-updater
 Icon=system-software-update
 Terminal=false
 Type=Application
-Categories=Utility;System;
-StartupNotify=true
-UDESK
-    ok "Updater desktop: ${updater_desktop}"
-}
+Categories=System;
+EOF
 
-main() {
-    echo ""
-    echo "  Readected — PDF Reader for the Proletariat"
-    echo "  ----------------------------------------"
-    echo ""
-
-    case "${1:-all}" in
-        deps)      check_deps ;;
-        configure) check_deps; configure ;;
-        build)     check_deps; configure; build ;;
-        install)   install_app ;;
-        all)
-            check_deps
-            configure
-            build
-            install_app
-            echo ""
-            ok "Done. Run: readected"
-            echo ""
-            ;;
-        uninstall)
-            info "Removing Readected..."
-            sudo rm -f /usr/bin/readected /usr/bin/readected-updater
-            sudo rm -f /usr/share/applications/readected.desktop
-            sudo rm -f /usr/share/applications/readected-updater.desktop
-            sudo update-desktop-database /usr/share/applications 2>/dev/null || true
-            ok "Uninstalled"
-            ;;
-        *)
-            echo "Usage: $0 [all|deps|configure|build|install|uninstall]"
-            echo "  PREFIX=/usr/local $0"
-            exit 1
-            ;;
-    esac
-}
-
-main "$@"
+echo ""
+echo "✓ Done. Launch with:  readected  [file.pdf]"
+echo "  Updater:             readected-updater"

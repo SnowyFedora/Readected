@@ -8,11 +8,11 @@
         <file>qml/components/SidePanel.qml</file>
         <file>qml/components/qmldir</file>
         <file>qml/themes/ThemeManager.qml</file>
-        <file>qml/themes/Marxism.qml</file>
+        <file>qml/themes/CatppuccinLatte.qml</file>
+        <file>qml/themes/CatppuccinMocha.qml</file>
         <file>qml/themes/GruvboxDark.qml</file>
         <file>qml/themes/GruvboxLight.qml</file>
-        <file>qml/themes/CatppuccinMocha.qml</file>
-        <file>qml/themes/CatppuccinLatte.qml</file>
+        <file>qml/themes/Marxism.qml</file>
         <file>qml/themes/qmldir</file>
     </qresource>
 </RCC>

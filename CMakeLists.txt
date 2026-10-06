@@ -19,13 +19,13 @@ find_package(Qt6 REQUIRED COMPONENTS
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(POPPLER_QT6 REQUIRED poppler-qt6)
 
-# ---- Main reader ----
+# ─── Main application ───────────────────────────────────────────────────────
 qt_add_executable(readected
     src/main.cpp
-    src/pdfdocument.h
     src/pdfdocument.cpp
-    src/pdfimageprovider.h
+    src/pdfdocument.h
     src/pdfimageprovider.cpp
+    src/pdfimageprovider.h
     src/filehelper.h
     resources.qrc
 )
@@ -42,20 +42,17 @@ target_link_libraries(readected PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::Widgets
+    Qt6::Network
     ${POPPLER_QT6_LIBRARIES}
 )
 
-target_compile_options(readected PRIVATE ${POPPLER_QT6_CFLAGS_OTHER})
-
-# ---- Updater (Material GUI) ----
+# ─── Updater application ────────────────────────────────────────────────────
 qt_add_executable(readected-updater
     src/updatermain.cpp
-    src/updaterbackend.h
     src/updaterbackend.cpp
+    src/updaterbackend.h
     updater.qrc
 )
-
-target_include_directories(readected-updater PRIVATE src)
 
 target_link_libraries(readected-updater PRIVATE
     Qt6::Core
@@ -63,8 +60,11 @@ target_link_libraries(readected-updater PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
-    Qt6::Widgets
     Qt6::Network
 )
 
-install(TARGETS readected readected-updater RUNTIME DESTINATION bin)
+# ─── Install ────────────────────────────────────────────────────────────────
+include(GNUInstallDirs)
+install(TARGETS readected readected-updater
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
