@@ -17,9 +17,9 @@ find_package(Qt6 REQUIRED COMPONENTS
 )
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(POPPLER_QT6 REQUIRED poppler-qt6)
+pkg_check_modules(POPPLER_QT6 REQUIRED IMPORTED_TARGET poppler-qt6)
 
-# ─── Main application ───────────────────────────────────────────────────────
+# ─── Main application ───────────────────────────────────────────────
 qt_add_executable(readected
     src/main.cpp
     src/pdfdocument.cpp
@@ -30,10 +30,7 @@ qt_add_executable(readected
     resources.qrc
 )
 
-target_include_directories(readected PRIVATE
-    ${POPPLER_QT6_INCLUDE_DIRS}
-    src
-)
+target_include_directories(readected PRIVATE src)
 
 target_link_libraries(readected PRIVATE
     Qt6::Core
@@ -43,10 +40,10 @@ target_link_libraries(readected PRIVATE
     Qt6::QuickControls2
     Qt6::Widgets
     Qt6::Network
-    ${POPPLER_QT6_LIBRARIES}
+    PkgConfig::POPPLER_QT6
 )
 
-# ─── Updater application ────────────────────────────────────────────────────
+# ─── Updater application ────────────────────────────────────
 qt_add_executable(readected-updater
     src/updatermain.cpp
     src/updaterbackend.cpp
@@ -60,10 +57,11 @@ target_link_libraries(readected-updater PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::Widgets
     Qt6::Network
 )
 
-# ─── Install ────────────────────────────────────────────────────────────────
+# ─── Install ─────────────────────────────────────────────────────────
 include(GNUInstallDirs)
 install(TARGETS readected readected-updater
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
