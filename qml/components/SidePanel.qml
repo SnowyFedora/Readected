@@ -6,12 +6,17 @@ import "../themes"
 
 Item {
     id: root
-    width: visible ? panelWidth : 0
+    // Layout: preferred width is driven by panelWidth, NOT by window size
+    Layout.fillHeight: true
+    Layout.fillWidth: false
+    Layout.preferredWidth: visible ? panelWidth : 0
+    Layout.minimumWidth: visible ? minWidth : 0
+    Layout.maximumWidth: visible ? maxWidth : 0
     clip: true
 
     property real panelWidth: 260
-    property real minWidth: 180
-    property real maxWidth: 480
+    property real minWidth: 140
+    property real maxWidth: 720
     property string title: "Outline"
     property string emptyText: "No outline"
     property var bookmarks: []
@@ -20,9 +25,11 @@ Item {
     signal widthEdited(real w)
 
     property bool resizing: false
-    Behavior on width {
-        enabled: !root.resizing
-        NumberAnimation { duration: 160; easing.type: Easing.OutCubic }
+
+    // Only animate open/close, never fight the drag
+    Behavior on Layout.preferredWidth {
+        enabled: !root.resizing && root.visible
+        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
     }
 
     Rectangle {
@@ -39,17 +46,16 @@ Item {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 40
-                Label {
+                Layout.preferredHeight: 36
+                Text {
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
+                    anchors.leftMargin: 14
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title
                     color: ThemeManager.textDim
                     font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    font.capitalization: Font.AllUppercase
-                    letterSpacing: 0.8
+                    font.weight: Font.Medium
+                    font.letterSpacing: 0.4
                 }
             }
 
@@ -57,7 +63,6 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
                 color: ThemeManager.border
-                opacity: 0.5
             }
 
             ListView {
@@ -66,51 +71,59 @@ Item {
                 Layout.fillHeight: true
                 clip: true
                 model: root.bookmarks
-                spacing: 1
+                spacing: 0
                 ScrollBar.vertical: ScrollBar {
                     policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 3; radius: 1.5; color: ThemeManager.border }
+                    contentItem: Rectangle {
+                        implicitWidth: 3
+                        radius: 1.5
+                        color: ThemeManager.border
+                    }
                 }
 
-                delegate: ItemDelegate {
-                    id: del
+                delegate: Item {
                     width: list.width
-                    height: 34
-                    leftPadding: 12 + (modelData.level ? (modelData.level - 1) * 12 : 0)
-                    rightPadding: 12
+                    height: 32
+                    property bool hovered: delMa.containsMouse
 
-                    contentItem: Text {
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
+                        anchors.topMargin: 1
+                        anchors.bottomMargin: 1
+                        radius: 4
+                        color: parent.hovered ? ThemeManager.surface2 : "transparent"
+                    }
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12 + (modelData.level ? (modelData.level - 1) * 10 : 0)
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
                         text: modelData.title || ""
                         color: ThemeManager.text
                         font.pixelSize: 12
                         elide: Text.ElideRight
-                        verticalAlignment: Text.AlignVCenter
-                        width: del.width - del.leftPadding - del.rightPadding
+                        wrapMode: Text.NoWrap
                     }
-
-                    background: Rectangle {
-                        color: del.hovered ? ThemeManager.surface2 : "transparent"
-                        radius: 6
+                    MouseArea {
+                        id: delMa
                         anchors.fill: parent
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
-                    }
-
-                    ToolTip.visible: del.hovered && contentItem.truncatedContentWidth > contentItem.width
-                    ToolTip.delay: 600
-                    ToolTip.text: modelData.title || ""
-
-                    onClicked: {
-                        if (modelData.page >= 0)
-                            root.pageRequested(modelData.page)
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (modelData.page >= 0)
+                                root.pageRequested(modelData.page)
+                        }
                     }
                 }
             }
 
-            Label {
+            Text {
                 visible: root.bookmarks.length === 0
                 Layout.fillWidth: true
-                Layout.margins: 24
+                Layout.margins: 20
                 text: root.emptyText
                 color: ThemeManager.textDim
                 horizontalAlignment: Text.AlignHCenter
@@ -120,40 +133,50 @@ Item {
         }
     }
 
+    // Drag handle on the right edge — width independent of window
     Rectangle {
         id: handle
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: parent.right
         width: 3
-        color: handleMa.containsMouse || handleMa.pressed ? ThemeManager.primary : "transparent"
-        opacity: handleMa.containsMouse || handleMa.pressed ? 0.7 : 0
-        visible: root.visible
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        z: 10
+        color: handleMa.containsMouse || handleMa.pressed ? ThemeManager.primary : ThemeManager.border
+        Behavior on color { ColorAnimation { duration: 80 } }
 
         MouseArea {
             id: handleMa
             anchors.fill: parent
-            anchors.margins: -4
+            anchors.leftMargin: -6
+            anchors.rightMargin: -6
             cursorShape: Qt.SizeHorCursor
             hoverEnabled: true
             preventStealing: true
+            acceptedButtons: Qt.LeftButton
+
             property real startX: 0
             property real startW: 0
+
             onPressed: (mouse) => {
                 root.resizing = true
-                startX = mapToItem(root.parent, mouse.x, 0).x
+                startX = mapToItem(root.parent, mouse.x, mouse.y).x
                 startW = root.panelWidth
             }
             onPositionChanged: (mouse) => {
                 if (!pressed) return
-                const x = mapToItem(root.parent, mouse.x, 0).x
-                const w = Math.min(root.maxWidth, Math.max(root.minWidth, startW + (x - startX)))
-                root.panelWidth = w
+                const x = mapToItem(root.parent, mouse.x, mouse.y).x
+                const delta = x - startX
+                // Clamp only by min/max panel limits — not by window size
+                const w = Math.round(Math.max(root.minWidth, Math.min(root.maxWidth, startW + delta)))
+                if (w !== root.panelWidth)
+                    root.panelWidth = w
             }
             onReleased: {
                 root.resizing = false
                 root.widthEdited(root.panelWidth)
+            }
+            onCanceled: {
+                root.resizing = false
             }
         }
     }
