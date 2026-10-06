@@ -7,62 +7,36 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS
-    Core
-    Gui
-    Qml
-    Quick
-    QuickControls2
-    Widgets
-    Network
+    Core Gui Qml Quick QuickControls2 Widgets Network
 )
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(POPPLER_QT6 REQUIRED IMPORTED_TARGET poppler-qt6)
 
-# ─── Main application ───────────────────────────────────────────────
 qt_add_executable(readected
     src/main.cpp
-    src/pdfdocument.cpp
     src/pdfdocument.h
-    src/pdfimageprovider.cpp
+    src/pdfdocument.cpp
     src/pdfimageprovider.h
+    src/pdfimageprovider.cpp
     src/filehelper.h
     resources.qrc
 )
-
 target_include_directories(readected PRIVATE src)
-
 target_link_libraries(readected PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Qml
-    Qt6::Quick
-    Qt6::QuickControls2
-    Qt6::Widgets
-    Qt6::Network
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets
     PkgConfig::POPPLER_QT6
 )
 
-# ─── Updater application ────────────────────────────────────
 qt_add_executable(readected-updater
     src/updatermain.cpp
-    src/updaterbackend.cpp
     src/updaterbackend.h
+    src/updaterbackend.cpp
     updater.qrc
 )
-
+target_include_directories(readected-updater PRIVATE src)
 target_link_libraries(readected-updater PRIVATE
-    Qt6::Core
-    Qt6::Gui
-    Qt6::Qml
-    Qt6::Quick
-    Qt6::QuickControls2
-    Qt6::Widgets
-    Qt6::Network
+    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets Qt6::Network
 )
 
-# ─── Install ─────────────────────────────────────────────────────────
-include(GNUInstallDirs)
-install(TARGETS readected readected-updater
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+install(TARGETS readected readected-updater RUNTIME DESTINATION bin)
