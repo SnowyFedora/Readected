@@ -128,50 +128,98 @@ QtObject {
     property color sysHighlightedText: "#0d0f12"
     property color sysMid: "#262c36"
 
-    function _p(key) {
-        if (current === "system") {
-            switch (key) {
-            case "bg": return sysWindow
-            case "surface": return sysBase
-            case "surface2": return sysButton
-            case "surface3": return sysMid
-            case "primary": return sysHighlight
-            case "primaryHover": return Qt.lighter(sysHighlight, 1.12)
-            case "onPrimary": return sysHighlightedText
-            case "text": return sysText
-            case "textDim": return Qt.rgba(sysText.r, sysText.g, sysText.b, 0.55)
-            case "border": return sysMid
-            case "accent": return sysHighlight
-            case "pageBg": return sysWindow
-            case "radius": return 10
-            case "elev": return 3
-            }
-        }
-        var t = palette[current]
-        return t ? t[key] : palette["graphite"][key]
+    property color bg: {
+        var c = current
+        if (c === "system") return sysWindow
+        var t = palette[c]
+        return t ? t.bg : palette["graphite"].bg
+    }
+    property color background: bg
+    property color surface: {
+        var c = current
+        if (c === "system") return sysBase
+        var t = palette[c]
+        return t ? t.surface : palette["graphite"].surface
+    }
+    property color surface2: {
+        var c = current
+        if (c === "system") return sysButton
+        var t = palette[c]
+        return t ? t.surface2 : palette["graphite"].surface2
+    }
+    property color surface3: {
+        var c = current
+        if (c === "system") return sysMid
+        var t = palette[c]
+        return t ? t.surface3 : palette["graphite"].surface3
+    }
+    property color primary: {
+        var c = current
+        if (c === "system") return sysHighlight
+        var t = palette[c]
+        return t ? t.primary : palette["graphite"].primary
+    }
+    property color primaryHover: {
+        var c = current
+        if (c === "system") return Qt.lighter(sysHighlight, 1.12)
+        var t = palette[c]
+        return t ? t.primaryHover : palette["graphite"].primaryHover
+    }
+    property color onPrimary: {
+        var c = current
+        if (c === "system") return sysHighlightedText
+        var t = palette[c]
+        return t ? t.onPrimary : palette["graphite"].onPrimary
+    }
+    property color text: {
+        var c = current
+        if (c === "system") return sysText
+        var t = palette[c]
+        return t ? t.text : palette["graphite"].text
+    }
+    property color textDim: {
+        var c = current
+        if (c === "system") return Qt.rgba(sysText.r, sysText.g, sysText.b, 0.55)
+        var t = palette[c]
+        return t ? t.textDim : palette["graphite"].textDim
+    }
+    property color border: {
+        var c = current
+        if (c === "system") return sysMid
+        var t = palette[c]
+        return t ? t.border : palette["graphite"].border
+    }
+    property color accent: {
+        var c = current
+        if (c === "system") return sysHighlight
+        var t = palette[c]
+        return t ? t.accent : palette["graphite"].accent
+    }
+    property color pageBg: {
+        var c = current
+        if (c === "system") return sysWindow
+        var t = palette[c]
+        return t ? t.pageBg : palette["graphite"].pageBg
+    }
+    property real radius: {
+        var c = current
+        if (c === "system") return 10
+        var t = palette[c]
+        return t ? Number(t.radius) : 10
+    }
+    property real elev: {
+        var c = current
+        if (c === "system") return 3
+        var t = palette[c]
+        return t ? Number(t.elev) : 3
     }
 
-    property color bg: _p("bg")
-    property color background: bg
-    property color surface: _p("surface")
-    property color surface2: _p("surface2")
-    property color surface3: _p("surface3")
-    property color primary: _p("primary")
-    property color primaryHover: _p("primaryHover")
-    property color onPrimary: _p("onPrimary")
-    property color text: _p("text")
-    property color textDim: _p("textDim")
-    property color border: _p("border")
-    property color accent: _p("accent")
-    property color pageBg: _p("pageBg")
-    property real radius: Number(_p("radius")) || 10
-    property real elev: Number(_p("elev")) || 3
-
     property bool isDark: {
-        if (current === "system")
+        var c = current
+        if (c === "system")
             return (sysWindow.r + sysWindow.g + sysWindow.b) < 1.5
         return ["graphite","marxism","gruvbox_dark","catppuccin_mocha","nord","dracula",
-                "tokyo_night","onedark","rosepine","everforest","solarized_dark"].indexOf(current) >= 0
+                "tokyo_night","onedark","rosepine","everforest","solarized_dark"].indexOf(c) >= 0
     }
 
     function setTheme(name) {
@@ -183,4 +231,5 @@ QtObject {
     function displayName(id) {
         return themeNames[id] || id
     }
+    function nameOf(id) { return displayName(id) }
 }
