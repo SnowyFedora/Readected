@@ -4,20 +4,19 @@ import QtQuick
 QtObject {
     id: root
 
-    property string current: "system"
+    property string current: "graphite"
 
     readonly property var themeIds: [
-        "system",
-        "marxism",
-        "gruvbox_dark", "gruvbox_light",
+        "graphite", "system",
         "catppuccin_mocha", "catppuccin_latte",
-        "nord", "dracula", "tokyo_night",
-        "onedark", "rosepine", "everforest",
-        "solarized_dark", "solarized_light"
+        "nord", "tokyo_night", "onedark", "rosepine",
+        "dracula", "everforest", "gruvbox_dark", "gruvbox_light",
+        "solarized_dark", "solarized_light", "marxism"
     ]
 
     readonly property var themeNames: ({
-        "system": "System (qt6ct)",
+        "graphite": "Graphite",
+        "system": "System",
         "marxism": "Marxism",
         "gruvbox_dark": "Gruvbox Dark",
         "gruvbox_light": "Gruvbox Light",
@@ -34,6 +33,12 @@ QtObject {
     })
 
     readonly property var palette: ({
+        "graphite": {
+            bg: "#0d0f12", surface: "#13161b", surface2: "#1c2128", surface3: "#262c36",
+            primary: "#7aa2f7", primaryHover: "#89b4fa", onPrimary: "#0d0f12",
+            text: "#e6e8ec", textDim: "#8b929e", border: "#1e242d",
+            accent: "#9d7cd8", pageBg: "#0a0c0f", radius: 10, elev: 3
+        },
         "marxism": {
             bg: "#121212", surface: "#1e1e1e", surface2: "#2c2c2c", surface3: "#383838",
             primary: "#cf6679", primaryHover: "#e57373", onPrimary: "#000000",
@@ -56,13 +61,13 @@ QtObject {
             bg: "#1e1e2e", surface: "#181825", surface2: "#313244", surface3: "#45475a",
             primary: "#cba6f7", primaryHover: "#f5c2e7", onPrimary: "#1e1e2e",
             text: "#cdd6f4", textDim: "#a6adc8", border: "#313244",
-            accent: "#f38ba8", pageBg: "#11111b", radius: 16, elev: 4
+            accent: "#f38ba8", pageBg: "#11111b", radius: 14, elev: 4
         },
         "catppuccin_latte": {
             bg: "#eff1f5", surface: "#e6e9ef", surface2: "#dce0e8", surface3: "#ccd0da",
             primary: "#8839ef", primaryHover: "#ea76cb", onPrimary: "#ffffff",
             text: "#4c4f69", textDim: "#6c6f85", border: "#ccd0da",
-            accent: "#d20f39", pageBg: "#e6e9ef", radius: 16, elev: 2
+            accent: "#d20f39", pageBg: "#e6e9ef", radius: 14, elev: 2
         },
         "nord": {
             bg: "#2e3440", surface: "#3b4252", surface2: "#434c5e", surface3: "#4c566a",
@@ -92,7 +97,7 @@ QtObject {
             bg: "#191724", surface: "#1f1d2e", surface2: "#26233a", surface3: "#403d52",
             primary: "#c4a7e7", primaryHover: "#ebbcba", onPrimary: "#191724",
             text: "#e0def4", textDim: "#908caa", border: "#26233a",
-            accent: "#eb6f92", pageBg: "#191724", radius: 16, elev: 4
+            accent: "#eb6f92", pageBg: "#191724", radius: 14, elev: 4
         },
         "everforest": {
             bg: "#2d353b", surface: "#343f44", surface2: "#3d484d", surface3: "#475258",
@@ -114,14 +119,14 @@ QtObject {
         }
     })
 
-    property color sysWindow: "#121212"
-    property color sysBase: "#1e1e1e"
-    property color sysButton: "#2c2c2c"
-    property color sysText: "#e0e0e0"
+    property color sysWindow: "#0d0f12"
+    property color sysBase: "#13161b"
+    property color sysButton: "#1c2128"
+    property color sysText: "#e6e8ec"
     property color sysBrightText: "#ffffff"
-    property color sysHighlight: "#bb86fc"
-    property color sysHighlightedText: "#000000"
-    property color sysMid: "#404040"
+    property color sysHighlight: "#7aa2f7"
+    property color sysHighlightedText: "#0d0f12"
+    property color sysMid: "#262c36"
 
     function _p(key) {
         if (current === "system") {
@@ -134,16 +139,16 @@ QtObject {
             case "primaryHover": return Qt.lighter(sysHighlight, 1.12)
             case "onPrimary": return sysHighlightedText
             case "text": return sysText
-            case "textDim": return Qt.rgba(sysText.r, sysText.g, sysText.b, 0.62)
+            case "textDim": return Qt.rgba(sysText.r, sysText.g, sysText.b, 0.55)
             case "border": return sysMid
             case "accent": return sysHighlight
             case "pageBg": return sysWindow
-            case "radius": return 12
-            case "elev": return 4
+            case "radius": return 10
+            case "elev": return 3
             }
         }
         var t = palette[current]
-        return t ? t[key] : palette["marxism"][key]
+        return t ? t[key] : palette["graphite"][key]
     }
 
     property color bg: _p("bg")
@@ -159,13 +164,13 @@ QtObject {
     property color border: _p("border")
     property color accent: _p("accent")
     property color pageBg: _p("pageBg")
-    property real radius: Number(_p("radius")) || 12
-    property real elev: Number(_p("elev")) || 4
+    property real radius: Number(_p("radius")) || 10
+    property real elev: Number(_p("elev")) || 3
 
     property bool isDark: {
         if (current === "system")
             return (sysWindow.r + sysWindow.g + sysWindow.b) < 1.5
-        return ["marxism","gruvbox_dark","catppuccin_mocha","nord","dracula",
+        return ["graphite","marxism","gruvbox_dark","catppuccin_mocha","nord","dracula",
                 "tokyo_night","onedark","rosepine","everforest","solarized_dark"].indexOf(current) >= 0
     }
 
@@ -173,7 +178,6 @@ QtObject {
         if (name === "system" || palette[name] !== undefined)
             current = name
     }
-
     function apply(name) { setTheme(name) }
 
     function displayName(id) {
