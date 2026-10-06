@@ -99,6 +99,26 @@ DESKTOP
 
     ok "Installed: ${PREFIX}/bin/readected"
     ok "Desktop entry: ${desktop_file}"
+
+    local updater_desktop="${apps_dir}/readected-updater.desktop"
+    local uw=(tee "${updater_desktop}")
+    if [[ ! -w "${apps_dir}" ]]; then
+        uw=(sudo tee "${updater_desktop}")
+    fi
+    cat << UDESK | "${uw[@]}" >/dev/null
+[Desktop Entry]
+Name=Readected Updater
+Name[ru]=Обновление Readected
+Comment=Update Readected PDF reader
+Comment[ru]=Обновление PDF-читалки Readected
+Exec=readected-updater
+Icon=system-software-update
+Terminal=false
+Type=Application
+Categories=Utility;System;
+StartupNotify=true
+UDESK
+    ok "Updater desktop: ${updater_desktop}"
 }
 
 main() {
@@ -123,14 +143,15 @@ main() {
             ;;
         uninstall)
             info "Removing Readected..."
-            sudo rm -f /usr/bin/readected
+            sudo rm -f /usr/bin/readected /usr/bin/readected-updater
             sudo rm -f /usr/share/applications/readected.desktop
+            sudo rm -f /usr/share/applications/readected-updater.desktop
             sudo update-desktop-database /usr/share/applications 2>/dev/null || true
             ok "Uninstalled"
             ;;
         *)
             echo "Usage: $0 [all|deps|configure|build|install|uninstall]"
-            echo "  PREFIX=/usr/local $0    # custom prefix"
+            echo "  PREFIX=/usr/local $0"
             exit 1
             ;;
     esac
