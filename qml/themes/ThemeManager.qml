@@ -147,6 +147,7 @@ QtObject {
     }
 
     property color bg: _p("bg")
+    property color background: bg
     property color surface: _p("surface")
     property color surface2: _p("surface2")
     property color surface3: _p("surface3")
@@ -172,6 +173,8 @@ QtObject {
         if (name === "system" || palette[name] !== undefined)
             current = name
     }
+
+    function apply(name) { setTheme(name) }
 
     function displayName(id) {
         return themeNames[id] || id
