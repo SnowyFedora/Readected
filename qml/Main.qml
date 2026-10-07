@@ -15,6 +15,7 @@ ApplicationWindow {
     minimumHeight: 560
     title: pdfDocument.ready ? ((pdfDocument.title || "PDF") + " — Readected") : "Readected"
     color: ThemeManager.bg
+    font.family: "Noto Sans"
     font.pixelSize: 13
     Material.theme: ThemeManager.isDark ? Material.Dark : Material.Light
     Material.accent: ThemeManager.primary
@@ -59,7 +60,7 @@ ApplicationWindow {
         property real zoom: 1.2
         property bool continuous: true
         property bool sidebar: true
-        property real sidebarWidth: 260
+        property real sidebarWidth: 280
         property bool invert: false
         property string recentJson: "[]"
     }
@@ -130,14 +131,14 @@ ApplicationWindow {
         if (!pdfDocument.ready) return
         var page = pageArea.currentPage
         for (var i = 0; i < userBookmarks.length; ++i)
-            if (userBookmarks[i].page === page) { sidePanel.panelTab = 1; return }
+            if (userBookmarks[i].page === page) { sidePanel.panelTab = 0; return }
         userBookmarks = userBookmarks.concat([{
             id: fileHelper.newId(), page: page,
             label: tr("page") + " " + (page + 1),
             created: fileHelper.nowIso()
         }])
         persistMarks()
-        sidePanel.panelTab = 1
+        sidePanel.panelTab = 0
     }
     function removeBookmark(id) {
         userBookmarks = userBookmarks.filter(function(b) { return b.id !== id })
@@ -250,6 +251,8 @@ ApplicationWindow {
         SidePanel {
             id: sidePanel
             visible: sidebarOpen
+            Layout.fillHeight: true
+            Layout.preferredWidth: sidebarOpen ? sidePanel.panelWidth : 0
             outlineTitle: tr("outline")
             bookmarksTitle: tr("bookmarks")
             emptyOutline: tr("noOutline")
@@ -258,8 +261,9 @@ ApplicationWindow {
             outline: pdfDocument.bookmarks
             userBookmarks: root.userBookmarks
             currentPage: pageArea.currentPage
+            panelTab: 0
             onPageRequested: function(p) { pageArea.goTo(p) }
-            onWidthEdited: function(w) { settings.sidebarWidth = w }
+            onWidthEdited: function(w) { settings.sidebarWidth = w; sidePanel.panelWidth = w }
             onAddBookmarkRequested: addBookmarkHere()
             onRemoveBookmarkRequested: function(id) { removeBookmark(id) }
         }
@@ -305,7 +309,7 @@ ApplicationWindow {
         color: ThemeManager.surface
         Text {
             anchors.left: parent.left; anchors.leftMargin: 12; anchors.verticalCenter: parent.verticalCenter
-            text: pdfDocument.ready ? ((pdfDocument.source || "").split("/").pop()) : "Readected 1.4 · bookmarks + notes"
+            text: pdfDocument.ready ? ((pdfDocument.source || "").split("/").pop()) : "Readected 1.5.5"
             color: ThemeManager.textDim; font.pixelSize: 10
         }
     }
