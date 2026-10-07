@@ -7,9 +7,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
+#include <QCryptographicHash>
 #include <QUuid>
 #include <QDateTime>
 
@@ -29,15 +27,26 @@ public:
         );
     }
 
-    Q_INVOKABLE QString sidecarPath(const QString &pdfPath) const
+    Q_INVOKABLE QString marksDir() const
     {
-        if (pdfPath.isEmpty()) return {};
-        return pdfPath + QStringLiteral(".readected.json");
+        const QString base = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+                             + QStringLiteral("/Readected/marks");
+        QDir().mkpath(base);
+        return base;
+    }
+
+    Q_INVOKABLE QString marksPathFor(const QString &pdfPath) const
+    {
+        if (pdfPath.isEmpty())
+            return {};
+        const QByteArray hash = QCryptographicHash::hash(
+            pdfPath.toUtf8(), QCryptographicHash::Sha256).toHex().left(32);
+        return marksDir() + QLatin1Char('/') + QString::fromLatin1(hash) + QStringLiteral(".json");
     }
 
     Q_INVOKABLE QString loadMarks(const QString &pdfPath) const
     {
-        const QString path = sidecarPath(pdfPath);
+        const QString path = marksPathFor(pdfPath);
         QFile f(path);
         if (!f.open(QIODevice::ReadOnly))
             return QStringLiteral("{\"bookmarks\":[],\"notes\":[]}");
@@ -46,8 +55,9 @@ public:
 
     Q_INVOKABLE bool saveMarks(const QString &pdfPath, const QString &json) const
     {
-        if (pdfPath.isEmpty()) return false;
-        const QString path = sidecarPath(pdfPath);
+        if (pdfPath.isEmpty())
+            return false;
+        const QString path = marksPathFor(pdfPath);
         QFile f(path);
         if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate))
             return false;
