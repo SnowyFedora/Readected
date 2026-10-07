@@ -9,18 +9,18 @@ Rectangle {
 
     property int currentPage: 0
     property int pageCount: 0
-    property real zoomFactor: 1.15
+    property real zoomFactor: 1.2
     property bool documentReady: false
     property bool continuous: true
     property bool invert: false
-    property string emptyHint: "Open a document"
+    property string emptyHint: ""
     property string emptyHint2: ""
 
     property real pageWpt: 595
     property real pageHpt: 842
     readonly property real pagePixelW: pageWpt * zoomFactor
     readonly property real pagePixelH: pageHpt * zoomFactor
-    readonly property real pageGap: continuous ? 20 : 0
+    readonly property real pageGap: continuous ? 24 : 0
     readonly property real pageStride: pagePixelH + pageGap
 
     signal pageChanged(int page)
@@ -37,7 +37,11 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {
             policy: ScrollBar.AsNeeded
-            contentItem: Rectangle { implicitWidth: 4; radius: 2; color: ThemeManager.border }
+            contentItem: Rectangle {
+                implicitWidth: 3
+                radius: 1.5
+                color: ThemeManager.border
+            }
         }
 
         delegate: Item {
@@ -45,16 +49,15 @@ Rectangle {
             height: root.pagePixelH
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: Math.min(root.pagePixelW, parent.width - 56)
+                width: Math.min(root.pagePixelW, parent.width - 48)
                 height: root.pagePixelH
                 color: "#ffffff"
-                radius: 2
                 border.color: ThemeManager.border
                 border.width: 1
+
                 Image {
                     id: img
                     anchors.fill: parent
-                    anchors.margins: 1
                     source: "image://pdf/" + index + "_" + root.zoomFactor.toFixed(2)
                     asynchronous: true
                     cache: false
@@ -67,14 +70,13 @@ Rectangle {
                     anchors.fill: parent
                     visible: root.invert
                     color: "#c4a574"
-                    opacity: 0.28
-                    radius: 2
+                    opacity: 0.25
                 }
                 BusyIndicator {
                     anchors.centerIn: parent
                     running: img.status === Image.Loading
                     visible: running
-                    width: 28; height: 28
+                    width: 24; height: 24
                 }
             }
         }
@@ -83,7 +85,8 @@ Rectangle {
         onMovementEnded: syncPage()
         function syncPage() {
             if (root.pageStride <= 0) return
-            const idx = Math.max(0, Math.min(root.pageCount - 1, Math.round(contentY / root.pageStride)))
+            const idx = Math.max(0, Math.min(root.pageCount - 1,
+                Math.round(contentY / root.pageStride)))
             if (idx !== root.currentPage) {
                 root.currentPage = idx
                 root.pageChanged(idx)
@@ -96,15 +99,14 @@ Rectangle {
         visible: root.documentReady && !root.continuous
         Rectangle {
             anchors.centerIn: parent
-            width: Math.min(root.pagePixelW, parent.width - 56)
-            height: Math.min(root.pagePixelH, parent.height - 40)
+            width: Math.min(root.pagePixelW, parent.width - 48)
+            height: Math.min(root.pagePixelH, parent.height - 32)
             color: "#ffffff"
-            radius: 2
             border.color: ThemeManager.border
             Image {
                 anchors.fill: parent
-                anchors.margins: 1
-                source: root.documentReady ? ("image://pdf/" + root.currentPage + "_" + root.zoomFactor.toFixed(2)) : ""
+                source: root.documentReady
+                        ? ("image://pdf/" + root.currentPage + "_" + root.zoomFactor.toFixed(2)) : ""
                 asynchronous: true
                 cache: false
                 smooth: true
@@ -114,46 +116,12 @@ Rectangle {
                 anchors.fill: parent
                 visible: root.invert
                 color: "#c4a574"
-                opacity: 0.28
-                radius: 2
+                opacity: 0.25
             }
         }
     }
 
-    Column {
-        anchors.centerIn: parent
-        spacing: 16
-        visible: !root.documentReady
-        width: Math.min(360, parent.width - 48)
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: 64; height: 64
-            radius: 16
-            color: ThemeManager.surface2
-            Text {
-                anchors.centerIn: parent
-                text: "\u25a2"
-                font.pixelSize: 28
-                color: ThemeManager.textDim
-            }
-        }
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.emptyHint
-            color: ThemeManager.text
-            font.pixelSize: 16
-            font.weight: Font.Medium
-        }
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width
-            text: root.emptyHint2
-            color: ThemeManager.textDim
-            font.pixelSize: 12
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-        }
-    }
+    Item { visible: false }
 
     WheelHandler {
         acceptedModifiers: Qt.ControlModifier
@@ -183,12 +151,14 @@ Rectangle {
     }
     function zoomIn()  { zoomFactor = Math.min(2.5, +(zoomFactor + 0.1).toFixed(2)) }
     function zoomOut() { zoomFactor = Math.max(0.4, +(zoomFactor - 0.1).toFixed(2)) }
-    function resetZoom() { zoomFactor = 1.15 }
+    function resetZoom() { zoomFactor = 1.2 }
     function fitToWidth() {
-        if (width > 80) zoomFactor = +((width - 64) / pageWpt).toFixed(2)
+        if (width > 80) zoomFactor = +((width - 56) / pageWpt).toFixed(2)
     }
     function fitToPage() {
         if (width > 80 && height > 80)
-            zoomFactor = +(Math.min((width - 64) / pageWpt, (height - 64) / pageHpt)).toFixed(2)
+            zoomFactor = +(Math.min((width - 56) / pageWpt, (height - 48) / pageHpt)).toFixed(2)
     }
+    function fitWidth() { fitToWidth() }
+    function fitPage() { fitToPage() }
 }
