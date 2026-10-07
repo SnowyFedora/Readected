@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QProcess>
+#include <cstdio>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
@@ -29,13 +31,61 @@ static QString findPdfArgument(const QStringList &args)
 
 int main(int argc, char *argv[])
 {
+    if (argc >= 2) {
+        const QString cmd = QString::fromLocal8Bit(argv[1]);
+        if (cmd == QLatin1String("help") || cmd == QLatin1String("--help") || cmd == QLatin1String("-h")) {
+            fprintf(stdout,
+                "Readected 1.5.5\n"
+                "  readected [file.pdf]     open viewer\n"
+                "  readected update         reinstall from GitHub\n"
+                "  readected uninstall      remove ~/.local binaries\n"
+                "  readected version        print version\n"
+                "  readected which          print binary path\n");
+            return 0;
+        }
+        if (cmd == QLatin1String("version") || cmd == QLatin1String("--version") || cmd == QLatin1String("-v")) {
+            fprintf(stdout, "Readected 1.5.5\n");
+            return 0;
+        }
+        if (cmd == QLatin1String("which")) {
+            fprintf(stdout, "%s\n", argv[0]);
+            return 0;
+        }
+        if (cmd == QLatin1String("update") || cmd == QLatin1String("--update")) {
+            return QProcess::execute(QStringLiteral("bash"), {
+                QStringLiteral("-lc"),
+                QStringLiteral(
+                    "TMP=$(mktemp -d); "
+                    "curl -fsSL -o \"$TMP/z.zip\" https://github.com/SnowyFedora/Readected/archive/refs/heads/main.zip "
+                    "|| wget -q -O \"$TMP/z.zip\" https://github.com/SnowyFedora/Readected/archive/refs/heads/main.zip; "
+                    "unzip -qo \"$TMP/z.zip\" -d \"$TMP\"; "
+                    "SRC=$(find \"$TMP\" -maxdepth 1 -type d -name 'Readected-*' | head -1); "
+                    "chmod +x \"$SRC/INSTALL_HOME.sh\"; "
+                    "bash \"$SRC/INSTALL_HOME.sh\"; "
+                    "rm -rf \"$TMP\""
+                )
+            });
+        }
+        if (cmd == QLatin1String("uninstall") || cmd == QLatin1String("--uninstall")) {
+            return QProcess::execute(QStringLiteral("bash"), {
+                QStringLiteral("-lc"),
+                QStringLiteral(
+                    "rm -f \"$HOME/.local/bin/readected\" \"$HOME/.local/bin/readected-bin\" "
+                    "\"$HOME/.local/bin/readected-update\" \"$HOME/.local/bin/readected-uninstall\" "
+                    "\"$HOME/.local/bin/readected-updater\"; "
+                    "rm -f \"$HOME/.local/share/applications/readected.desktop\"; "
+                    "echo 'Uninstalled. Marks kept in ~/.config/Readected/marks/'"
+                )
+            });
+        }
+    }
+
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("Readected"));
     app.setOrganizationName(QStringLiteral("Proletariat"));
-    app.setApplicationVersion(QStringLiteral("1.3.0"));
+    app.setApplicationVersion(QStringLiteral("1.5.5"));
     app.setDesktopFileName(QStringLiteral("readected"));
 
-    // Material Design (qt6ct still works with System theme for colors)
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
         QQuickStyle::setStyle(QStringLiteral("Material"));
 
