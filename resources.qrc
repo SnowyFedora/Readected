@@ -6,6 +6,7 @@
         <file>qml/components/PageArea.qml</file>
         <file>qml/components/SearchBar.qml</file>
         <file>qml/components/SidePanel.qml</file>
+        <file>qml/components/MarksStore.qml</file>
         <file>qml/components/qmldir</file>
         <file>qml/themes/ThemeManager.qml</file>
         <file>qml/themes/CatppuccinLatte.qml</file>

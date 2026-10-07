@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(Readected VERSION 1.3.0 LANGUAGES CXX)
+project(Readected VERSION 1.5.5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS
-    Core Gui Qml Quick QuickControls2 Widgets Network
+    Core Gui Qml Quick QuickControls2 Widgets
 )
 
 find_package(PkgConfig REQUIRED)
@@ -28,15 +28,4 @@ target_link_libraries(readected PRIVATE
     PkgConfig::POPPLER_QT6
 )
 
-qt_add_executable(readected-updater
-    src/updatermain.cpp
-    src/updaterbackend.h
-    src/updaterbackend.cpp
-    updater.qrc
-)
-target_include_directories(readected-updater PRIVATE src)
-target_link_libraries(readected-updater PRIVATE
-    Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Widgets Qt6::Network
-)
-
-install(TARGETS readected readected-updater RUNTIME DESTINATION bin)
+install(TARGETS readected RUNTIME DESTINATION bin)

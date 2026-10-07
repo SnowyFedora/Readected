@@ -1,1 +1,1 @@
-v1.4 bookmarks + notes editor mode 2026-10-07
+v1.5.5 fix font.families crash 2026-10-07

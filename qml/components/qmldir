@@ -3,3 +3,4 @@ SidePanel 1.0 SidePanel.qml
 PageArea 1.0 PageArea.qml
 SearchBar 1.0 SearchBar.qml
 AboutDialog 1.0 AboutDialog.qml
+MarksStore 1.0 MarksStore.qml
