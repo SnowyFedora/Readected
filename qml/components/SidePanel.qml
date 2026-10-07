@@ -11,16 +11,18 @@ Item {
     Layout.preferredWidth: visible ? panelWidth : 0
     Layout.minimumWidth: visible ? minWidth : 0
     Layout.maximumWidth: visible ? maxWidth : 0
+    implicitWidth: visible ? panelWidth : 0
+    width: visible ? panelWidth : 0
     clip: true
 
-    property real panelWidth: 260
-    property real minWidth: 140
-    property real maxWidth: 720
+    property real panelWidth: 280
+    property real minWidth: 160
+    property real maxWidth: 900
     property string outlineTitle: "Outline"
     property string bookmarksTitle: "Bookmarks"
     property string emptyOutline: "No outline"
     property string emptyBookmarks: "No bookmarks"
-    property string addBookmarkLabel: "Add"
+    property string addBookmarkLabel: "+ Mark"
     property var outline: []
     property var userBookmarks: []
     property int panelTab: 0
@@ -33,140 +35,97 @@ Item {
 
     property bool resizing: false
 
-    Behavior on Layout.preferredWidth {
-        enabled: !root.resizing && root.visible
-        NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-    }
-
     Rectangle {
         id: body
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        anchors.right: handle.left
+        anchors.right: grip.left
         color: ThemeManager.surface
 
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 0
+        Rectangle {
+            id: tabBar
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 36
+            color: ThemeManager.surface
 
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 36
-                spacing: 0
+            Row {
+                anchors.fill: parent
                 Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    width: parent.width / 2
+                    height: parent.height
                     Rectangle {
                         anchors.fill: parent
-                        color: root.panelTab === 0 ? ThemeManager.surface2 : "transparent"
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.outlineTitle
-                            color: root.panelTab === 0 ? ThemeManager.primary : ThemeManager.textDim
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.panelTab = 0
-                        }
-                    }
-                }
-                Item {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Rectangle {
-                        anchors.fill: parent
-                        color: root.panelTab === 1 ? ThemeManager.surface2 : "transparent"
-                        Text {
-                            anchors.centerIn: parent
-                            text: root.bookmarksTitle
-                            color: root.panelTab === 1 ? ThemeManager.primary : ThemeManager.textDim
-                            font.pixelSize: 11
-                            font.weight: Font.Medium
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.panelTab = 1
-                        }
-                    }
-                }
-            }
-
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: ThemeManager.border }
-
-            ListView {
-                id: outlineList
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                visible: root.panelTab === 0
-                clip: true
-                model: root.outline
-                spacing: 0
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 3; radius: 1.5; color: ThemeManager.border }
-                }
-                delegate: Item {
-                    width: outlineList.width
-                    height: 32
-                    property bool hovered: oMa.containsMouse
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
+                        anchors.margins: 2
                         radius: 4
-                        color: parent.hovered ? ThemeManager.surface2 : "transparent"
+                        color: root.panelTab === 0 ? ThemeManager.surface2 : "transparent"
                     }
                     Text {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 12 + (modelData.level ? (modelData.level - 1) * 10 : 0)
-                        anchors.right: parent.right
-                        anchors.rightMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: modelData.title || ""
-                        color: ThemeManager.text
+                        anchors.centerIn: parent
+                        text: root.bookmarksTitle
+                        color: root.panelTab === 0 ? ThemeManager.primary : ThemeManager.textDim
                         font.pixelSize: 12
-                        elide: Text.ElideRight
+                        font.weight: Font.DemiBold
                     }
                     MouseArea {
-                        id: oMa
                         anchors.fill: parent
-                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: if (modelData.page >= 0) root.pageRequested(modelData.page)
+                        onClicked: root.panelTab = 0
+                    }
+                }
+                Item {
+                    width: parent.width / 2
+                    height: parent.height
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        radius: 4
+                        color: root.panelTab === 1 ? ThemeManager.surface2 : "transparent"
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.outlineTitle
+                        color: root.panelTab === 1 ? ThemeManager.primary : ThemeManager.textDim
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.panelTab = 1
                     }
                 }
             }
-            Text {
-                visible: root.panelTab === 0 && root.outline.length === 0
-                Layout.fillWidth: true
-                Layout.margins: 20
-                text: root.emptyOutline
-                color: ThemeManager.textDim
-                horizontalAlignment: Text.AlignHCenter
-                font.pixelSize: 12
-                wrapMode: Text.WordWrap
+            Rectangle {
+                anchors.bottom: parent.bottom
+                width: parent.width
+                height: 1
+                color: ThemeManager.border
             }
+        }
 
-            RowLayout {
-                visible: root.panelTab === 1
-                Layout.fillWidth: true
-                Layout.preferredHeight: 36
-                Layout.leftMargin: 10
-                Layout.rightMargin: 8
-                Text {
-                    text: root.bookmarksTitle
-                    color: ThemeManager.textDim
-                    font.pixelSize: 11
-                    Layout.fillWidth: true
-                }
+        Item {
+            id: bookmarksPage
+            anchors.top: tabBar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            visible: root.panelTab === 0
+
+            Rectangle {
+                id: addRow
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 40
+                color: "transparent"
                 Rectangle {
-                    width: 56; height: 24
+                    anchors.right: parent.right
+                    anchors.rightMargin: 10
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 72; height: 26
                     radius: 4
                     color: addMa.containsMouse ? ThemeManager.primaryHover : ThemeManager.primary
                     Text {
@@ -188,38 +147,35 @@ Item {
 
             ListView {
                 id: bmList
-                visible: root.panelTab === 1
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                anchors.top: addRow.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
                 clip: true
                 model: root.userBookmarks
                 spacing: 2
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AsNeeded
-                    contentItem: Rectangle { implicitWidth: 3; radius: 1.5; color: ThemeManager.border }
-                }
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
                 delegate: Item {
                     width: bmList.width
                     height: 40
-                    property bool hovered: bmMa.containsMouse
                     Rectangle {
                         anchors.fill: parent
                         anchors.leftMargin: 6
                         anchors.rightMargin: 6
                         radius: 4
-                        color: parent.hovered ? ThemeManager.surface2 : "transparent"
+                        color: bmMa.containsMouse ? ThemeManager.surface2 : "transparent"
                     }
                     Column {
                         anchors.left: parent.left
                         anchors.leftMargin: 14
-                        anchors.right: delBtn.left
-                        anchors.rightMargin: 4
+                        anchors.right: delBm.left
                         anchors.verticalCenter: parent.verticalCenter
                         spacing: 2
                         Text {
                             width: parent.width
-                            text: modelData.label || ("Page " + ((modelData.page || 0) + 1))
+                            text: modelData.label || ("p. " + ((modelData.page || 0) + 1))
                             color: ThemeManager.text
+                            font.family: "Noto Sans"
                             font.pixelSize: 12
                             elide: Text.ElideRight
                         }
@@ -231,17 +187,17 @@ Item {
                         }
                     }
                     Text {
-                        id: delBtn
+                        id: delBm
                         anchors.right: parent.right
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "x"
+                        text: "\u00d7"
                         color: ThemeManager.textDim
-                        font.pixelSize: 12
-                        visible: parent.hovered
+                        font.pixelSize: 14
+                        visible: bmMa.containsMouse
                         MouseArea {
                             anchors.fill: parent
-                            anchors.margins: -6
+                            anchors.margins: -8
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.removeBookmarkRequested(modelData.id)
                         }
@@ -256,13 +212,73 @@ Item {
                     }
                 }
             }
+
             Text {
-                visible: root.panelTab === 1 && root.userBookmarks.length === 0
-                Layout.fillWidth: true
-                Layout.margins: 20
+                anchors.centerIn: parent
+                visible: root.userBookmarks.length === 0
+                width: parent.width - 32
+                horizontalAlignment: Text.AlignHCenter
                 text: root.emptyBookmarks
                 color: ThemeManager.textDim
+                font.pixelSize: 12
+                wrapMode: Text.WordWrap
+            }
+        }
+
+        Item {
+            id: outlinePage
+            anchors.top: tabBar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            visible: root.panelTab === 1
+
+            ListView {
+                id: outlineList
+                anchors.fill: parent
+                clip: true
+                model: root.outline
+                spacing: 0
+                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                delegate: Item {
+                    width: outlineList.width
+                    height: 32
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.leftMargin: 6
+                        anchors.rightMargin: 6
+                        radius: 4
+                        color: oMa.containsMouse ? ThemeManager.surface2 : "transparent"
+                    }
+                    Text {
+                        anchors.left: parent.left
+                        anchors.leftMargin: 12 + (modelData.level ? (modelData.level - 1) * 10 : 0)
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: modelData.title || ""
+                        color: ThemeManager.text
+                        font.family: "Noto Sans"
+                        font.pixelSize: 12
+                        elide: Text.ElideRight
+                    }
+                    MouseArea {
+                        id: oMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (modelData.page >= 0) root.pageRequested(modelData.page)
+                    }
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                visible: root.outline.length === 0
+                width: parent.width - 32
                 horizontalAlignment: Text.AlignHCenter
+                text: root.emptyOutline
+                color: ThemeManager.textDim
                 font.pixelSize: 12
                 wrapMode: Text.WordWrap
             }
@@ -270,38 +286,43 @@ Item {
     }
 
     Rectangle {
-        id: handle
+        id: grip
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.right: parent.right
-        width: 3
-        z: 10
-        color: handleMa.containsMouse || handleMa.pressed ? ThemeManager.primary : ThemeManager.border
-        Behavior on color { ColorAnimation { duration: 80 } }
+        width: 5
+        z: 20
+        color: gripMa.containsMouse || gripMa.pressed ? ThemeManager.primary : ThemeManager.border
 
         MouseArea {
-            id: handleMa
+            id: gripMa
             anchors.fill: parent
-            anchors.leftMargin: -6
-            anchors.rightMargin: -6
+            anchors.leftMargin: -10
+            anchors.rightMargin: -4
             cursorShape: Qt.SizeHorCursor
             hoverEnabled: true
             preventStealing: true
+            acceptedButtons: Qt.LeftButton
             property real startX: 0
             property real startW: 0
-            onPressed: (mouse) => {
+            onPressed: function(mouse) {
                 root.resizing = true
                 startX = mapToItem(root.parent, mouse.x, mouse.y).x
                 startW = root.panelWidth
             }
-            onPositionChanged: (mouse) => {
+            onPositionChanged: function(mouse) {
                 if (!pressed) return
-                const x = mapToItem(root.parent, mouse.x, mouse.y).x
-                const w = Math.round(Math.max(root.minWidth, Math.min(root.maxWidth, startW + (x - startX))))
-                if (w !== root.panelWidth) root.panelWidth = w
+                var x = mapToItem(root.parent, mouse.x, mouse.y).x
+                var w = Math.round(Math.max(root.minWidth, Math.min(root.maxWidth, startW + (x - startX))))
+                root.panelWidth = w
+                root.width = w
+                root.Layout.preferredWidth = w
             }
-            onReleased: { root.resizing = false; root.widthEdited(root.panelWidth) }
-            onCanceled: root.resizing = false
+            onReleased: function() {
+                root.resizing = false
+                root.widthEdited(root.panelWidth)
+            }
+            onCanceled: function() { root.resizing = false }
         }
     }
 }
