@@ -4,6 +4,82 @@
 #include <QDebug>
 #include <QUrl>
 #include <functional>
+#include <QByteArray>
+
+static QString sanitizeOutlineTitle(QString name)
+{
+    if (name.isEmpty())
+        return name;
+
+    name.remove(QChar(0xFEFF));
+    name.remove(QChar(0xFFFE));
+    name.remove(QChar(0x0000));
+    name.remove(QChar(0x200B));
+    name.remove(QChar(0x200E));
+    name.remove(QChar(0x200F));
+
+    auto countCyr = [](const QString &s) {
+        int n = 0;
+        for (const QChar &ch : s) {
+            const uint u = ch.unicode();
+            if (u >= 0x0400 && u <= 0x04FF)
+                ++n;
+        }
+        return n;
+    };
+
+    {
+        bool onlyLatin1 = true;
+        QByteArray raw;
+        raw.reserve(name.size());
+        for (const QChar &ch : name) {
+            const uint u = ch.unicode();
+            if (u > 0xFF) { onlyLatin1 = false; break; }
+            raw.append(static_cast<char>(u & 0xFF));
+        }
+        if (onlyLatin1 && raw.size() >= 2) {
+            const QString recovered = QString::fromUtf8(raw);
+            if (!recovered.isEmpty()
+                && !recovered.contains(QChar::ReplacementCharacter)
+                && countCyr(recovered) > countCyr(name)) {
+                name = recovered;
+            }
+        }
+    }
+
+    if (name.size() >= 4) {
+        bool onlyLatin1 = true;
+        QByteArray raw;
+        for (const QChar &ch : name) {
+            if (ch.unicode() > 0xFF) { onlyLatin1 = false; break; }
+            raw.append(static_cast<char>(ch.unicode() & 0xFF));
+        }
+        if (onlyLatin1 && (raw.size() % 2 == 0)) {
+            QString fromBe;
+            QString fromLe;
+            for (int i = 0; i + 1 < raw.size(); i += 2) {
+                const ushort be = (static_cast<unsigned char>(raw[i]) << 8)
+                                  | static_cast<unsigned char>(raw[i + 1]);
+                const ushort le = (static_cast<unsigned char>(raw[i + 1]) << 8)
+                                  | static_cast<unsigned char>(raw[i]);
+                if (be) fromBe.append(QChar(be));
+                if (le) fromLe.append(QChar(le));
+            }
+            const int base = countCyr(name);
+            if (countCyr(fromBe) > base && countCyr(fromBe) >= countCyr(fromLe))
+                name = fromBe;
+            else if (countCyr(fromLe) > base)
+                name = fromLe;
+        }
+    }
+
+    while (!name.isEmpty() && name.front().category() == QChar::Other_Control)
+        name.remove(0, 1);
+    while (!name.isEmpty() && name.back().category() == QChar::Other_Control)
+        name.chop(1);
+
+    return name.simplified();
+}
 
 PdfDocument::PdfDocument(QObject *parent)
     : QObject(parent)
@@ -40,7 +116,6 @@ void PdfDocument::loadDocument(const QString &path)
         return;
     }
 
-    // Poppler 26+ returns std::unique_ptr already
     m_doc = Poppler::Document::load(path);
     if (!m_doc || m_doc->isLocked()) {
         m_doc.reset();
@@ -53,7 +128,7 @@ void PdfDocument::loadDocument(const QString &path)
     m_doc->setRenderHint(Poppler::Document::TextHinting, true);
 
     m_pageCount = m_doc->numPages();
-    m_title = m_doc->title();
+    m_title = sanitizeOutlineTitle(m_doc->title());
     if (m_title.isEmpty())
         m_title = fi.fileName();
 
@@ -87,7 +162,6 @@ void PdfDocument::loadBookmarks()
     if (!m_doc)
         return;
 
-    // Poppler 26: outline() returns QList<Poppler::OutlineItem>
     const QList<Poppler::OutlineItem> topLevel = m_doc->outline();
     if (topLevel.isEmpty())
         return;
@@ -96,21 +170,18 @@ void PdfDocument::loadBookmarks()
     walk = [&](const QList<Poppler::OutlineItem> &items, int depth) {
         for (const auto &item : items) {
             QVariantMap entry;
-            entry["title"] = item.name();
+            entry["title"] = sanitizeOutlineTitle(item.name());
 
             int page = -1;
-            // destination() returns QSharedPointer<const LinkDestination>
             auto dest = item.destination();
-            if (dest) {
+            if (dest)
                 page = dest->pageNumber() - 1;
-            }
             entry["page"] = page;
             entry["level"] = depth;
             m_bookmarks.append(entry);
 
-            if (item.hasChildren()) {
+            if (item.hasChildren())
                 walk(item.children(), depth + 1);
-            }
         }
     };
 
@@ -126,7 +197,6 @@ QImage PdfDocument::renderPage(int pageIndex, qreal scale) const
     if (!page)
         return {};
 
-    // DPI = 72 * scale
     return page->renderToImage(72.0 * scale, 72.0 * scale);
 }
 
