@@ -1,0 +1,16 @@
+Readected v1.3.1 — build
+
+Dependencies (Arch):
+  sudo pacman -S qt6-base qt6-declarative qt6-quickcontrols2 \
+                 poppler-qt6 cmake ninja pkgconf base-devel
+
+Build & install:
+  cd readected
+  chmod +x install.sh INSTALL_HOME.sh
+  ./INSTALL_HOME.sh    # installs to ~/.local (no root)
+  # or: ./install.sh   # installs to /usr (needs sudo/pkexec)
+
+Run:
+  ~/.local/bin/readected
+  readected /path/to/file.pdf
+  readected-updater
